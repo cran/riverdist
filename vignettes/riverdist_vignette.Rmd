@@ -9,6 +9,8 @@ vignette: >
 
 [Package overview](#Package overview)
 
+[Typical workflow](#Typical workflow)
+
 [Limitations, notes, and caveats](#Limitations, notes, and caveats)
 
 [Importing and displaying river network data](#Importing and displaying river network data)
@@ -28,15 +30,25 @@ vignette: >
 
 <a name="Package overview"></a>
 
-Package overview
----------------------------------------
+## Package overview
 The 'riverdist' package is intended as a free and readily-available resource for distance calculation along a river network.  This package was written with fisheries research in mind, but could be applied to other fields.  The 'riverdist' package builds upon the functionality of the 'sp' and 'rgdal' packages, which provide the utility of reading GIS shapefiles into the R environment.  What 'riverdist' adds is the ability to treat a linear feature as a connected network, and to calculate travel routes and travel distances along that network.
+
+
+<a name="Typical workflow"></a>
+
+## Typical workflow with 'riverdist'
+1. Import a linear shapefile using `line2network()`.  The shapefile to import must be a linear feature - converting a polygon feature to a line feature will result in an outline, which will not be useable.  The shapefile to import should be as simple as possible.  If GIS software is available, both trimming the shapefile to the same region as the study area and performing a spatial dissolve are recommended.
+
+2. Clean up the imported shapefile however necessary.  Editing functions are provided, but the `cleanup()` function interactively steps through all the editing functions in a good order, and is recommended in nearly all cases.
+
+3. Convert point data to river locations using `xy2segvert()` or `ptshp2segvert()`.  This will snap each point to the nearest river network location.
+
+4. Perform all desired analyses.
 
 
 <a name="Limitations, notes, and caveats"></a>
 
-Limitations, notes, and caveats
---------------------------------------------
+## Limitations, notes, and caveats
 Care must be exercised in the presence of braided channels, in which multiple routes may exist between river locations.  In these cases, the default route calculation provided by 'riverdist' will be the shortest travel route, but it is possible that the shortest travel route may not be the route of interest.  Functions are provided to check for braiding, as well as select the route of interest.  If no braiding is detected, route and distance calculation can switch to a more efficient algorithm.
 
 Another important note is that only projected data can be used, both for river networks and for point data.  The 'riverdist' environment in R does not share the ability of GIS software to project-on-the-fly, and treats all coordinates on a linear (rectangular) scale.  Therefore, the projection of all data must also be the same.
@@ -44,8 +56,7 @@ Another important note is that only projected data can be used, both for river n
 
 <a name="Importing and displaying river network data"></a>
 
-Importing and displaying river network data
--------------------------------------------
+## Importing and displaying river network data
 
 [Importing a river network](#Importing a river network)
 
@@ -64,6 +75,8 @@ Importing and displaying river network data
 **Importing a river network using `line2network()`**
 
 In a typical workflow, a user will first import a projected polyline shapefile using `line2network()`.  This function reads the specified shapefile using the 'sp' and 'rgdal' packages, and adds the network connectivity, thus creating a river network object.  If an unprojected shapefile is detected, an error will be generated.  However, the `reproject=` argument allows the `line2network()` to re-project the shapefile before importing it as a river network.
+
+While 'riverdist' does provide tools for editing a river network that do not rely on GIS software, it is strongly recommended to simplify the river shapefile as much as possible before importing into R.  In particular, a spatial dissolve will likely be very helpful, if GIS software is available.  This will create a few long line segments instead of many, many short segments.
 
 ```{r,eval=FALSE}
 library(riverdist)
@@ -125,7 +138,8 @@ hist(fakefish_riv$snapdist, main="snapping distance (m)")
 Spatial data can be read directly from a point shapefile using `pointshp2segvert()`, which returns the resulting river locations added to the data table from the point shapefile.
 
 ```{r,eval=FALSE}
-segvert_from_shp <- pointshp2segvert(path=".", layer="MyPointShapefile", rivers=MyRivernetwork)
+segvert_from_shp <- pointshp2segvert(path=".", layer="MyPointShapefile", 
+                                     rivers=MyRivernetwork)
 ```
 
 
@@ -140,14 +154,14 @@ In the plot below, the raw coordinates are displayed as red circles and the rive
 ```{r,fig.width=5,fig.height=5}
 zoomtoseg(seg=c(11, 14), rivers=Gulk)
 points(fakefish$x, fakefish$y, pch=16, col="red")
-riverpoints(seg=fakefish_riv$seg, vert=fakefish_riv$vert, rivers=Gulk, pch=15, col="blue")
+riverpoints(seg=fakefish_riv$seg, vert=fakefish_riv$vert, rivers=Gulk, pch=15, 
+            col="blue")
 ```
 
 
 <a name="Basic distance calculation in a non-messy river network"></a>
 
-Basic distance calculation in a non-messy river network
--------------------------------------------------
+## Basic distance calculation in a non-messy river network
 
 [Computing network distance](#Computing network distance)
 
@@ -212,7 +226,8 @@ The minimum observed (linear) home range for each individual can be calculated u
 ```{r,fig.width=7,fig.height=3.5}
 # calculating observed minimum home range for all individuals
 par(mfrow=c(1,3))
-homerange(unique=smallset$id, seg=smallset$seg, vert=smallset$vert, rivers=Gulk, map=TRUE)
+homerange(unique=smallset$id, seg=smallset$seg, vert=smallset$vert, rivers=Gulk, 
+          map=TRUE)
 ```
 
 
@@ -222,12 +237,21 @@ homerange(unique=smallset$id, seg=smallset$seg, vert=smallset$vert, rivers=Gulk,
 
 A matrix of the river network distance between every observation and every other observation can also be calculated using `riverdistancemat()`.  A use for this function might be if the user wishes to calculate all distances at once, and subset later.  
 
+```{r}
+dmat <- riverdistancemat(smallset$seg,smallset$vert,Gulk)
+round(dmat)[1:7,1:7]  # only showing the first 7 rows & columns for clarity
+```
+
 The `logical` argument can be used for subsetting, if the full network distance matrix is not needed.  This capability is shown below, calculating the distance matrix only for observations occurring on segment number 2.  The `ID` argument can be used with a vector of observation labels, to display row and column labels that may be easier to interpret than observation indices.
 
 ```{r}
-logi1 <- (smallset$seg==2)
-obsID <- paste0("id",smallset$id,"-flight",smallset$flight)  # constructing observation labels
-riverdistancemat(seg=smallset$seg, vert=smallset$vert, rivers=Gulk, logical=logi1, ID=obsID)
+logi1 <- (smallset$seg==2) 
+
+# constructing observation labels
+obsID <- paste0("id",smallset$id,"-flight",smallset$flight) 
+
+riverdistancemat(seg=smallset$seg, vert=smallset$vert, rivers=Gulk, logical=logi1, 
+                 ID=obsID)
 ```
 
 
@@ -256,8 +280,7 @@ riverdistancetofrom(seg1=streamlocs.seg, vert1=streamlocs.vert, seg2=smallset$se
 
 <a name="Incorporating flow direction"></a>
 
-Incorporating flow direction
--------------------------------------
+## Incorporating flow direction
 
 [Defining flow direction of a river network](#Defining flow direction of a river network)
 
@@ -291,11 +314,13 @@ Specifying `flowconnected=TRUE` in both `riverdirection()` and `upstream()` will
 zoomtoseg(seg=c(6,3), rivers=Gulk)
 riverpoints(seg=c(6,4), vert=c(250,250), col=4, pch=15, rivers=Gulk1)
 #riverdistance(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1, map=TRUE)
-text(c(859122.4, 872104.1), c(6964127.4,6969741.0), pos=c(3, 4), labels=c("beginning", "end"))
+text(c(859122.4, 872104.1), c(6964127.4,6969741.0), pos=c(3, 4), 
+     labels=c("beginning", "end"))
 riverdirection(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1)
 upstream(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1, net=FALSE)
 upstream(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1, net=TRUE)
-upstream(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1, flowconnected=TRUE)
+upstream(startseg=6, endseg=4, startvert=250, endvert=250, rivers=Gulk1, 
+         flowconnected=TRUE)
 ```
 
 
@@ -309,44 +334,41 @@ River direction and upstream distance are also applied in functions `riverdirect
 
 <a name="Allowing different route-detection algorithms a possible time-saver"></a>
 
-Allowing different route-detection algorithms: a possible time-saver
------------------------------------------------------
+## Allowing different route-detection algorithms: a possible time-saver
 
-Currently three algorithms are implemented to detect routes between river locations, with the functions automatically selecting the most appropriate unless another is specified.  If braiding presence is detected or unknown, Dijkstra's algorithm is used (`algorithm="Dijkstra"`) to return the shortest route, which is safe but slow.  If braiding is confirmed to be absent using `checkbraidedTF()`, the first complete route detected between locations is used, which can save considerable processing time.  
+Currently three algorithms are implemented to detect routes between river locations, with the functions automatically selecting the most appropriate unless another is specified.  Dijkstra's algorithm is used by default (`algorithm="Dijkstra"`), which returns the shortest route in the presence of braiding.  The sequential algorithm (`algorithm="sequential"`) may be used, which returns the first complete route detected.  The sequential algorithm is much slower and is not recommended in nearly all cases, but is retained as an option for certain checks.
 
-Running `buildsegroutes()` calculates the routes to each network segment from a single point, defined as the river network mouth.  This allows route calculation to switch to an even simpler method, further reducing processing time.
+If many distance calculations or a more sophisticated analysis is to be conducted, it is highly recommended to run `buildsegroutes()`, allowing `algorithm="segroutes"` to be used.  This adds route and distance information to the river network object, greatly simplifying distance calculation, and reducing processing time for each distance calculation.  The `buildsegroutes()` function also includes an option to calculate a distance lookup table as well.  This may take a few seconds to run, but will reduce computation times even further - cutting the already-fast segment route algorithm time by 50-80%.  Lookup tables can be calculated directly using `buildlookup()`, but may be extremely slow to calculate without running `buildsegroutes()` first.
 
-In the example below, distance is calculated between the two points in a very complex river network, using all three route detection algorithms, and calculating the time requirement for a single calculation.
+In the example below, distance is calculated between the two points in a complex river network, using all three route detection algorithms, and calculating the time requirement for a single calculation.
 
 ```{r}
 data(abstreams)
 
-# distance calculation before defining braiding or building routes
-tstart <- Sys.time()
-riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams, 
-              algorithm="Dijkstra")
-Sys.time()- tstart
-
-# distance calculation before building routes
 tstart <- Sys.time()
 riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams, 
               algorithm="sequential")
 Sys.time()- tstart
 
-# distance calculation after building routes
 tstart <- Sys.time()
 riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams, 
-              algorithm="segroutes")
+              algorithm="Dijkstra")
+Sys.time()- tstart
+
+tstart <- Sys.time()
+riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams)
+
+# Note: it is not necessary to specify the algorithm here: the distance function
+# will automatically select the fastest algorithm unless otherwise specified.
 Sys.time()- tstart
 ```
 
-In this case, building segment routes takes about as much time as calculating a single distance, a little less than a second.  Calculating a single distance after building segment routes takes about a hundredth of a second, thus dramatically saving time if multiple distances were to be computed, such as in a large matrix of distances, or multiple analyses.
+In this case, building segment routes and distance lookup tables takes a little more than a second, even with a fairly complex river network.  Calculating a single distance afterwards takes about 80 microseconds using segment routes and about 25 microseconds using the lookup tables.  This dramatically saves time if multiple distances are to be computed, such as in a large matrix of distances, or multiple analyses.  Kernel density and K-function analysis is probably prohibitively slow otherwise.
 
 
 <a name="Beyond individuals summarizing or plotting at the dataset level"></a>
 
-Beyond individuals: summarizing or plotting at the dataset level
-----------------------------------------
+## Beyond individuals: summarizing or plotting at the dataset level
 
 [Calculating and plotting kernel density](#Calculating and plotting kernel density)
 
@@ -499,8 +521,7 @@ plotmatbysurveylist(matbysurveylist)
 
 <a name="Editing a river network object, or fixing a messy one"></a>
 
-Editing a river network object, or fixing a messy one
-----------------------------------------------------------
+## Editing a river network object, or fixing a messy one
 
 [All-purpose river network cleanup](#All-purpose river network cleanup)
 
@@ -541,7 +562,7 @@ abstreams_fixed <- cleanup(abstreams0)  # fixing many problems
 
 This is a very likely issue, particularly if the network was imported without changes in a GIS environment.  River network segments can be manually removed using `trimriver()`, as shown below.  Using the argument `trim=` removes the specified segments, and using the argument `trimto=` removes all *but* the specified segments.  The example below is fairly simplistic, but illustrates the usage of the `trim=` and `trimto=` arguments.
 
-```{r,fig.width=7.5,fig.height=4, warning=FALSE}
+```{r,fig.width=7.5,fig.height=4, warning=FALSE, message=FALSE}
 Gulk_trim1 <- trimriver(trim=c(10,11,12,13,14), rivers=Gulk)
 Gulk_trim2 <- trimriver(trimto=c(10,11,12,13,14), rivers=Gulk)
 
@@ -553,7 +574,7 @@ plot(x=Gulk_trim2, main="trimto=c(10,11,12,13,14)")
 
 It is also possible to trim a river network to include only segments that are within a spatial tolerance of a set of X-Y points.  The `trimtopoints()` function offers three methods of doing this.  Specifying `method="snap"` (the default) returns a river network made up only of the closest segments to the input points.  This is the simplest method, but may result in spatial gaps, as shown in the example below.  Specifying `method="snaproute"` returns a network of the closest segments to the input points, but also includes any segments necessary to maintain a connected network.  Specifying `method="buffer"` returns a river network made up of segments with endpoints or midpoints located within a specified "buffer"  distance of the input points.  This may be advantageous if the user wants to include segments that are near, but not directly proximal, to the input points.
 
-```{r,fig.width=5,fig.height=5}
+```{r,fig.width=5,fig.height=5, message=FALSE}
 data(Kenai3)
 x <- c(174185, 172304, 173803, 176013)
 y <- c(1173471, 1173345, 1163638, 1164801)
@@ -563,7 +584,8 @@ Kenai3.buf3 <- trimtopoints(x=x, y=y, rivers=Kenai3, method="buffer", dist=5000)
 
 plot(x=Kenai3, main="original")
 points(x, y, pch=15, col=4)
-legend(par("usr")[1], par("usr")[4], legend="points to buffer around", pch=15, col=4, cex=.6)
+legend(par("usr")[1], par("usr")[4], legend="points to buffer around", pch=15, 
+       col=4, cex=.6)
 ```
 
 ```{r,fig.width=7.5,fig.height=3.5}
@@ -579,7 +601,7 @@ points(x, y, pch=15, col=4)
 
 Automatically removing all segments not connected to the river network mouth can be done using `removeunconnected()`.  This may be useful if extraneous lines are retained from an import from GIS.  This function may take some time to process, and simplifying the network using `dissolve()` is recommended.
 
-```{r,fig.width=7.5,fig.height=5}
+```{r,fig.width=7.5,fig.height=5, message=FALSE}
 data(Koyukuk2)
 Koy_subset <- trimriver(trimto=c(30,28,29,3,19,27,4),rivers=Koyukuk2)
 Koy_subset <- setmouth(seg=1,vert=427,rivers=Koy_subset)
@@ -598,10 +620,10 @@ plot(x=Koy_subset_trim, main="unconnected segments removed")
 
 Using an unnecessarily complex river network can greatly increase processing time.  Runs of segments can be combined using `dissolve()`, which works much like a spatial dissolve within GIS.
 
-```{r,fig.width=7.5,fig.height=5, warning=FALSE}
+```{r,fig.width=7.5,fig.height=5, warning=FALSE, message=FALSE}
 data(Kenai2)
-Kenai2_sub <- trimriver(trimto=c(26,157,141,69,3,160,2,35,102,18,64,86,49,103,61
-                                 ,43,183,72,47,176), rivers=Kenai2)
+Kenai2_sub <- trimriver(trimto=c(26,157,141,69,3,160,2,35,102,18,64,86,49,103,61,
+                                 43,183,72,47,176), rivers=Kenai2)
 
 Kenai2_sub_dissolve <- dissolve(rivers=Kenai2_sub)
 
@@ -619,7 +641,7 @@ This issue is problematic, as it directly affects how connectivity is detected w
 
 In the example below, segments 7, 8, 13, and 16 need to be split in multiple places.  Since connectedness is not detected for the associated tributaries, `topologydots()` shows the endpoints as red, or unconnected.  Calling `splitsegments()` breaks the segments in the appropriate places, allowing for the network to be connected as it should be.
 
-```{r,fig.width=7.5,fig.height=4.5, warning=FALSE}
+```{r,fig.width=7.5,fig.height=4.5, warning=FALSE, message=FALSE}
 data(Koyukuk1)
 
 Koyukuk1.split <- splitsegments(rivers=Koyukuk1)
@@ -636,7 +658,7 @@ topologydots(rivers=Koyukuk1.split, main="split")
 
 Segments can be manually "attached" at their closest points using `connectsegs()`.
 
-```{r,fig.width=7.5,fig.height=4, warning=FALSE}
+```{r,fig.width=7.5,fig.height=4, warning=FALSE, message=FALSE}
 data(Koyukuk0)
 
 Koyukuk0.1 <- connectsegs(connect=21, connectto=20, rivers=Koyukuk0)
@@ -657,8 +679,8 @@ topologydots(Koyukuk0.1, add=TRUE)
 This is an issue that may be difficult to recognize, and may cause mysterious problems with network topology, sometimes preventing route calculation.  These "microsegments" can be removed using `removemicrosegs()`.
 
 ```{r,eval=FALSE}
-data(abstreams1)
-abstreams2 <- removemicrosegs(abstreams1)
+data(abstreams0)
+abstreams2 <- removemicrosegs(abstreams0)
 ```
 
 
@@ -668,25 +690,24 @@ abstreams2 <- removemicrosegs(abstreams1)
 
 In some cases, such as when a river network contains a lake, the shapefile will contain long straight-line sections, with vertices retained only for the beginning and end.  If point data exist in these regions, when they are converted to river locations, they will be snapped to the nearest vertex - in this case, one of the endpoints of the straight stretch.  Since it is likely that a greater degree of precision is desired in distance calculations, `addverts()` provides a method of inserting additional vertices, wherever the river network contains vertices that are spaced at a greater distance than a specified threshold.
 
-The example below first shows how the Skilak Lake section of the Kenai River network was originally read from a shapefile, with the vertices of segment 71 overlayed. The second plot shows the same section with the vertices of segment 71 overlayed, after adding vertices every 200 meters to the full river network.
+The example below first shows how the Skilak Lake section of the Kenai River network was originally read from a shapefile, with the vertices of segment 74 overlayed. The second plot shows the same section with the vertices of segment 74 overlayed, after adding vertices every 200 meters to the full river network.
 
-```{r,fig.width=7.5,fig.height=4, warning=FALSE}
+```{r,fig.width=7.5,fig.height=4, warning=FALSE, message=FALSE}
 data(Kenai3)
 Kenai3split <- addverts(Kenai3, mindist=200)
 
 par(mfrow=c(1,2))
-zoomtoseg(seg=c(73,70,71), rivers=Kenai3, main="segment 71 vertices")
-points(Kenai3$lines[[71]]) 
+zoomtoseg(seg=c(47,74,78), rivers=Kenai3, main="segment 74 vertices")
+points(Kenai3$lines[[74]]) 
 
-zoomtoseg(seg=c(73,70,71), rivers=Kenai3split, main="adding points every 200m")
-points(Kenai3split$lines[[71]])  
+zoomtoseg(seg=c(47,74,78), rivers=Kenai3split, main="adding points every 200m")
+points(Kenai3split$lines[[74]])  
 ```
 
 
 <a name="Dealing with braided channels"></a>
 
-Dealing with braided channels
---------------------------------
+## Dealing with braided channels
 Most of the utility of the 'riverdist' package was designed assuming a truly dendritic river network, in which there is no braiding of channels and only one path exists between one river location and another.  If this is not the case and a braided network is used, the user is **strongly cautioned** that the distances reported may be inaccurate.  In the event of braiding, the shortest route between two locations is returned, but the possibility exists that this may not be the route desired.
 
 [Checking for braiding](#Checking for braiding)
@@ -705,14 +726,14 @@ par(mfrow=c(1,2))
 plot(x=Gulk, main="Gulkana River")
 plot(x=KilleyW, ylim=c(1164500, 1168500), main="Killey River West")
 
-checkbraided(rivers=Gulk)
-checkbraided(rivers=KilleyW)
+checkbraided(rivers=Gulk, progress=FALSE)
+checkbraided(rivers=KilleyW, progress=FALSE)
 ```
 
 Braiding can also be checked for specific routes.  In the example below, braiding does not exist between segments 1 and 7, but does exist between segments 1 and 5.
 
 ```{r,fig.width=5,fig.height=5}
-Kenai3.subset <- trimriver(trimto=c(18,1,64,27,104,93,91,83,45,2), rivers=Kenai3)
+Kenai3.subset <- trimriver(trimto=c(22,2,70,30,15,98,96,89,52,3), rivers=Kenai3)
 plot(x=Kenai3.subset)
 
 checkbraided(startseg=1, endseg=7, rivers=Kenai3.subset)

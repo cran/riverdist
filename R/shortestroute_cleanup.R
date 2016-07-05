@@ -15,9 +15,12 @@ removeduplicates <- function(rivers) {
   trim.i <- 1
   trim <- NULL
   for(i in 1:length(rivers$lines)) {
-    for(j in 1:length(rivers$lines)) {
+    lengthsequal <- (rivers$lengths==rivers$lengths[i])
+    lengthsequal[i] <- F
+    whichtocheck <- (1:length(rivers$lines))[lengthsequal]
+    for(j in whichtocheck) {
       if(i!=j&length(rivers$lines[[i]])==length(rivers$lines[[j]])) {
-        if(all(rivers$lines[[i]]==rivers$lines[[j]])) {
+        if(all(rivers$lines[[i]]==rivers$lines[[j]]) | all(rivers$lines[[i]]==(rivers$lines[[j]][(dim(rivers$lines[[j]])[1]):1,]))) {
           trim[trim.i] <- max(c(i,j))
           trim.i <- trim.i+1
         }
@@ -25,7 +28,8 @@ removeduplicates <- function(rivers) {
     }
   }
   trim <- unique(trim)
-  rivers1 <- trimriver(trim=trim,rivers=rivers)
+  suppressMessages(rivers1 <- trimriver(trim=trim,rivers=rivers))
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers1)
 }
 
@@ -73,31 +77,6 @@ cleanup <- function(rivers) {
   connections <- rivers1$connections
   length <- length(lines)
   
-  # calculating a new connectivity matrix to capture beginning-beginning/end-end and beginning-end/end-beginning connections (special braided case)
-  for(i in 1:length) {
-    for(j in 1:length) {
-      i.max <- dim(lines[[i]])[1]
-      j.max <- dim(lines[[j]])[1]
-      if(pdist(lines[[i]][1,],lines[[j]][1,])<tolerance & i!=j) {
-        connections[i,j] <- 1
-      }
-      if(pdist(lines[[i]][1,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 2
-      }
-      if(pdist(lines[[i]][i.max,],lines[[j]][1,])<tolerance & i!=j) {
-        connections[i,j] <- 3
-      }
-      if(pdist(lines[[i]][i.max,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 4
-      }
-      if(pdist(lines[[i]][1,],lines[[j]][1,])<tolerance & pdist(lines[[i]][i.max,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 5
-      }
-      if(pdist(lines[[i]][i.max,],lines[[j]][1,])<tolerance & pdist(lines[[i]][1,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 6
-      }
-    }
-  }
   n.top <- function(seg,connections) {
     return(length(connections[seg,][(connections[seg,]==1 | connections[seg,]==2 | connections[seg,]==5 | connections[seg,]==6) & is.na(connections[seg,])==F]))
   }
@@ -125,7 +104,7 @@ cleanup <- function(rivers) {
     while(!any(yes==c("y","Y","n","N"))) yes <- readline(prompt="Dissolve? (y/n) ")
     if(yes=="Y" | yes=="y") {
       cat("Dissolving...",'\n')
-      rivers2 <- dissolve(rivers=rivers1)
+      suppressMessages(rivers2 <- dissolve(rivers=rivers1))
       cat("Simplified from",length(rivers1$lines),"to",length(rivers2$lines),"segments.",'\n')
       plot(rivers2)
     }
@@ -143,13 +122,13 @@ cleanup <- function(rivers) {
   cat('\n',length(problems),"microsegments identified.",'\n')
   if(length(problems)>0) {
     cat('\n',"Removing microsegments...",'\n')
-    rivers3 <- removemicrosegs(rivers2)  
+    suppressMessages(rivers3 <- removemicrosegs(rivers2) ) 
     plot(rivers3)
     yes<-0
     while(!any(yes==c("y","Y","n","N"))) yes <- readline(prompt="(Re)dissolve? (y/n) ")
     if(yes=="Y" | yes=="y") {
       cat("Dissolving...",'\n')
-      rivers3a <- dissolve(rivers=rivers3)
+      suppressMessages(rivers3a <- dissolve(rivers=rivers3))
       plot(rivers3a)
       cat("Simplified from",length(rivers3$lines),"to",length(rivers3a$lines),"segments.",'\n')
       rivers3 <- rivers3a
@@ -159,14 +138,20 @@ cleanup <- function(rivers) {
   
   cat('\n',"Checking if splitting segments is needed...",'\n')
   
+  pdist2 <- function(p1,p2mat) {
+    dist <- sqrt((p1[1]-p2mat[,1])^2 + (p1[2]-p2mat[,2])^2)
+    return(dist)
+  }
+  
   riv.i <- 1
   done <- F
   needed <- F
   while(!done) {
     if(n.top(riv.i,rivers3$connections)==0) {
       for(riv.j in 1:length(rivers3$lines)) {
-        for(vert.j in 1:(dim(rivers3$lines[[riv.j]])[1])) {
-          if(riv.i!=riv.j & pdist(rivers3$lines[[riv.i]][1,],rivers3$lines[[riv.j]][vert.j,]) < rivers3$tolerance) {
+        if(riv.i!=riv.j) {
+          distanceses <- pdist2(rivers3$lines[[riv.i]][1,],rivers3$lines[[riv.j]])
+          if(any(distanceses<rivers3$tolerance)) {
             needed <- T
             done <- T
           }
@@ -175,8 +160,9 @@ cleanup <- function(rivers) {
     }
     if(n.bot(riv.i,rivers3$connections)==0) {
       for(riv.j in 1:length(rivers3$lines)) {
-        for(vert.j in 1:(dim(rivers3$lines[[riv.j]])[1])) {
-          if(riv.i!=riv.j & pdist(rivers3$lines[[riv.i]][dim(rivers3$lines[[riv.i]])[1],],rivers3$lines[[riv.j]][vert.j,]) < rivers3$tolerance) {
+        if(riv.i!=riv.j) {
+          distanceses <- pdist2(rivers3$lines[[riv.i]][dim(rivers3$lines[[riv.i]])[1],],rivers3$lines[[riv.j]])
+          if(any(distanceses<rivers3$tolerance)) {
             needed <- T
             done <- T
           }
@@ -193,7 +179,7 @@ cleanup <- function(rivers) {
   if(needed) {
     cat("Segments must be split for connectedness to be correct.",'\n')
     cat("Splitting segments...",'\n')
-    rivers4 <- splitsegments(rivers=rivers3)
+    suppressMessages(rivers4 <- splitsegments(rivers=rivers3))
     cat("Identified",(length(rivers4$lines)-length(rivers3$lines)),"new segment breaks.",'\n')
   }
   
@@ -214,7 +200,7 @@ cleanup <- function(rivers) {
   if(yes=="Y" | yes=="y") {
     mindist <- as.numeric(readline(prompt="Minimum distance to use: "))
     cat("Inserting vertices...",'\n')
-    rivers4 <- addverts(rivers4, mindist=mindist)
+    suppressMessages(rivers4 <- addverts(rivers4, mindist=mindist))
   }
   
   if(is.na(rivers4$mouth$mouth.seg) | is.na(rivers4$mouth$mouth.vert)) {
@@ -258,7 +244,7 @@ cleanup <- function(rivers) {
     origin41 <-which(order==origin)
     
     for(i in 1:length(rivers41$lines)) {
-      if(is.na(detectroute(end=origin41,start=i,rivers=rivers41,stopiferror=FALSE,algorithm="sequential")[1])) {
+      if(is.na(detectroute(end=origin41,start=i,rivers=rivers41,stopiferror=FALSE,algorithm="Dijkstra")[1])) {    #was sequential
         takeout[k] <- i
         k <- k+1
       }
@@ -272,12 +258,13 @@ cleanup <- function(rivers) {
         whattodo <- readline(prompt="Please select - (r)emove unconnected segments or (c)onnect segments & check again (r/c) ")
       }
       if(whattodo=="r" | whattodo=="R") {
-        rivers5 <- trimriver(trim=takeout,rivers=rivers4)
+        suppressMessages(rivers5 <- trimriver(trim=takeout,rivers=rivers4))
         dealtwith<-T
         cat("No unconnected segments detected.",'\n')
       }
       if(whattodo=="c" | whattodo=="C") {
-        plot(rivers4)
+        plot(rivers4,lwd=2)
+        topologydots(rivers4,add=T)
         connect1 <- as.numeric(readline("Enter the number of the segment you'd like to connect: "))
         connect2 <- as.numeric(readline("Enter the number of the segment you'd like to connect it to: "))
         howtodo <- 0
@@ -288,7 +275,19 @@ cleanup <- function(rivers) {
         if(any(howtodo==c("e","E"))) closestpt <- F
         if(closestpt) cat('\n',"Connecting and calculating new segment splits...",'\n')
         if(!closestpt) cat('\n',"Connecting...",'\n')
-        rivers4 <- connectsegs(connect=connect1,connectto=connect2,nearestvert=closestpt,rivers=rivers4)
+        suppressMessages(rivers4a <- connectsegs(connect=connect1,connectto=connect2,nearestvert=closestpt,rivers=rivers4))
+        tozoomto <- rbind(rivers4$lines[[connect1]],rivers4$lines[[connect2]])
+        xmin <- min(tozoomto[,1],na.rm=T)
+        xmax <- max(tozoomto[,1],na.rm=T)
+        ymin <- min(tozoomto[,2],na.rm=T)
+        ymax <- max(tozoomto[,2],na.rm=T)
+        plot(rivers4a,xlim=c(xmin,xmax),ylim=c(ymin,ymax),lwd=2)
+        topologydots(rivers=rivers4a,add=TRUE)
+        whatnow <- 0
+        while(!any(whatnow==c("y","Y","n","N"))) {
+          whatnow <- readline(prompt="Accept changes? (y/n) ")
+        }
+        if(any(whatnow==c("y","Y"))) rivers4 <- rivers4a 
       }
     }
     if(is.null(takeout)) {
@@ -306,7 +305,7 @@ cleanup <- function(rivers) {
     if(yes=="Y" | yes=="y") {
       whichones <- readline("Enter segments to remove, separated by commas: ")
       whichones <- as.numeric(unlist(strsplit(whichones, ",")))
-      rivers5a <- trimriver(trim=whichones,rivers=rivers5)
+      suppressMessages(rivers5a <- trimriver(trim=whichones,rivers=rivers5))
       plot(rivers5a)
       accept<-0
       while(!any(accept==c("y","Y","n","N"))) accept <- readline(prompt="Accept changes? (y/n) ")
@@ -335,25 +334,31 @@ cleanup <- function(rivers) {
   }
   
   cat('\n',"Checking for braiding...",'\n')
-  rivers5<-checkbraidedTF(rivers5)
+  routes<-checkbraidedTF(rivers5,toreturn="routes")
+  rivers5$braided <- !is.null(routes)
   braided <- rivers5$braided
   rivers6<-rivers5
   if(braided) {
-    cat("Braiding detected within river network.",'\n')
+    cat('\n',"Braiding detected within river network.",'\n')
     yes <- "Y"
     while(yes=="Y" | yes=="y") {
-      yes<-0
-      while(!any(yes==c("y","Y","n","N"))) yes<-readline(prompt="Remove any additional segments (y/n) ")  
+      yes<-0 
+      if(braided) {
+        routestoplot <- c(routes$route1[!routes$route1 %in% routes$route2], routes$route2[!routes$route2 %in% routes$route1])
+        zoomtoseg(seg=routestoplot,rivers=rivers6,segmentnum=F)
+        highlightseg(seg=routestoplot,add=T,rivers=rivers6,color=T)
+      }
+      while(!any(yes==c("y","Y","n","N"))) yes<-readline(prompt="Remove any additional segments (y/n) ") 
       if(yes=="Y" | yes=="y") {
         whichones <- readline("Enter segments to remove, separated by commas: ")
         whichones <- as.numeric(unlist(strsplit(whichones, ",")))
-        rivers6a <- trimriver(trim=whichones,rivers=rivers6)
+        suppressMessages(rivers6a <- trimriver(trim=whichones,rivers=rivers6))
         plot(rivers6a)
         accept<-0
         while(!any(accept==c("y","Y","n","N"))) accept <- readline(prompt="Accept changes? (y/n) ")  
         if(accept=="Y" | accept=="y") rivers6 <- rivers6a
         if(accept!="Y" & accept!="y") plot(rivers6)
-        if(is.na(rivers5$mouth$mouth.seg)) {
+        if(is.na(rivers6$mouth$mouth.seg)) {
           mouthseg <- readline(prompt="Please identify new segment number of river mouth ")
           showends(seg=as.numeric(mouthseg),rivers=rivers6)
           mouthvert <- readline(prompt="Please identify new vertex number of river mouth ")
@@ -363,15 +368,16 @@ cleanup <- function(rivers) {
       checkagain<-0
       while(!any(checkagain==c("y","Y","n","N"))) checkagain<-readline(prompt="Re-check for braiding? (y/n) ")
       if(checkagain=="Y" | checkagain=="y") {
-        rivers6 <- checkbraidedTF(rivers6)
+        routes<-checkbraidedTF(rivers6,toreturn="routes")
+        rivers6$braided <- !is.null(routes)
         braided <- rivers6$braided
-        if(braided) cat("Braiding still detected.",'\n')
-        if(!braided) cat("Braiding no longer detected.",'\n')
+        if(braided) cat('\n',"Braiding still detected.",'\n')
+        if(!braided) cat('\n',"Braiding no longer detected.",'\n')
       }
     }
   }
   if(!braided) {
-    cat("No braiding detected within river network.",'\n','\n')
+    cat('\n',"No braiding detected within river network.",'\n','\n')
     yes<-0
     while(!any(yes==c("y","Y","n","N"))) yes<-readline(prompt="Build segment routes?  This will save time in route calculations. (y/n) ")
     if(yes=="Y" | yes=="y") rivers6 <- buildsegroutes(rivers6)
@@ -379,6 +385,7 @@ cleanup <- function(rivers) {
   
   cat('\n',"Cleanup completed, returning a network with",length(rivers6$lines),"segments.",'\n')
   cat('\n',"Recommend saving output to a .Rdata or .rda file.",'\n')
+  cat('\n',"Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().",'\n')
   return(rivers6)
 }
 
@@ -396,6 +403,8 @@ cleanup <- function(rivers) {
 #' @param nearestvert Whether to connect at the nearest vertex and split the
 #'   segment (\code{FALSE}), or connect at the nearest endpoint (\code{TRUE}). 
 #'   Defaults to \code{TRUE}.
+#' @param calcconnections Whether to recalculate all connections. 
+#'   Defaults to \code{TRUE}.  Setting to \code{FALSE} is not recommended unless many connections are to be made, in which case connections can be calculated afterward.
 #' @param rivers The river network object to use.
 #' @return A new river network object with the specified segments connected (see
 #'   \link{rivernetwork})
@@ -412,7 +421,7 @@ cleanup <- function(rivers) {
 #' plot(Koyukuk0.1,ylim=c(1930500,1931500), xlim=c(194900,195100))
 #' topologydots(Koyukuk0.1, add=TRUE)
 #' @export
-connectsegs <- function(connect,connectto,nearestvert=F,rivers) {
+connectsegs <- function(connect,connectto,nearestvert=FALSE,rivers,calcconnections=TRUE) {
   if(length(whoconnected(connect,rivers))>0){
     if(any(whoconnected(connect,rivers)==connectto)) stop("Segments are already connected.")
   }
@@ -439,31 +448,10 @@ connectsegs <- function(connect,connectto,nearestvert=F,rivers) {
     rivers$sp@lines[[rivers$lineID[connect,2]]]@Lines[[rivers$lineID[connect,3]]]@coords <- rivers$lines[[connect]]
     rivers$lengths[[connect]] <- rivers$lengths[[connect]]+min(dists)
     
-    if(!is.null(rivers$segroutes)) {
-      rivers$segroutes <- NULL
-      warning("Segment routes must be rebuilt - see help(buildsegroutes).")
-    }
-    
     # updating the connectivity matrix 
     length <- length(rivers$lines)
-    for(i in 1:length) {
-      for(j in 1:length) {
-        i.max <- dim(rivers$lines[[i]])[1]
-        j.max <- dim(rivers$lines[[j]])[1]
-        if(pdist(rivers$lines[[i]][1,],rivers$lines[[j]][1,])<rivers$tolerance & i!=j) {
-          rivers$connections[i,j] <- 1
-        }
-        if(pdist(rivers$lines[[i]][1,],rivers$lines[[j]][j.max,])<rivers$tolerance & i!=j) {
-          rivers$connections[i,j] <- 2
-        }
-        if(pdist(rivers$lines[[i]][i.max,],rivers$lines[[j]][1,])<rivers$tolerance & i!=j) {
-          rivers$connections[i,j] <- 3
-        }
-        if(pdist(rivers$lines[[i]][i.max,],rivers$lines[[j]][j.max,])<rivers$tolerance & i!=j) {
-          rivers$connections[i,j] <- 4
-        }
-      }
-    }
+    if(calcconnections) rivers$connections <- calculateconnections(lines=rivers$lines,tolerance=rivers$tolerance)
+    if(any(rivers$connections %in% 5:6)) rivers$braided <- TRUE
   }
   
   if(nearestvert) {
@@ -489,13 +477,16 @@ connectsegs <- function(connect,connectto,nearestvert=F,rivers) {
     rivers$sp@lines[[rivers$lineID[connect,2]]]@Lines[[rivers$lineID[connect,3]]]@coords <- rivers$lines[[connect]]
     rivers$lengths[[connect]] <- rivers$lengths[[connect]]+min(c(dbeg,dend))
     
-    if(!is.null(rivers$segroutes)) {
-      rivers$segroutes <- NULL
-      warning("Segment routes must be rebuilt - see help(buildsegroutes).")
-    }
-    rivers <- splitsegments(rivers)
+    suppressMessages(rivers <- splitsegments(rivers))
   }
   
+  if(!is.null(rivers$segroutes)) {
+    rivers <- buildsegroutes(rivers,lookup=F)
+  }
+  rivers <- addcumuldist(rivers)
+  if(!is.null(rivers$distlookup)) rivers <- buildlookup(rivers)
+  
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers)
 }
 
@@ -524,12 +515,16 @@ removemicrosegs <- function(rivers) {
     for(jj in connectedto) {
       for(jjj in connectedto) {
         if(jj!=jjj & !any(whoconnected(seg=jj,rivers=rivers)==jjj)) {
-          rivers <- connectsegs(connect=jj,connectto=jjj,rivers=rivers)
+          rivers <- connectsegs(connect=jj,connectto=jjj,rivers=rivers,calcconnections=F)
         }
       }
     }
   }
-  rivers <- trimriver(trim=problems,rivers=rivers)
+  if(length(problems)>0) {
+    rivers$connections <- calculateconnections(lines=rivers$lines,tolerance=rivers$tolerance)  
+    suppressMessages(rivers <- trimriver(trim=problems,rivers=rivers))
+  }
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers)
 }
 
@@ -548,11 +543,11 @@ removemicrosegs <- function(rivers) {
 #' data(Kenai3)
 #' Kenai3split <- addverts(Kenai3,mindist=200)
 #' 
-#' zoomtoseg(seg=c(73,70,71), rivers=Kenai3)
-#' points(Kenai3$lines[[71]])        # vertices before adding
+#' zoomtoseg(seg=c(47,74,78), rivers=Kenai3)
+#' points(Kenai3$lines[[74]])        # vertices before adding
 #' 
-#' zoomtoseg(seg=c(73,70,71), rivers=Kenai3split)
-#' points(Kenai3split$lines[[71]])   # vertices after adding
+#' zoomtoseg(seg=c(47,74,78), rivers=Kenai3split)
+#' points(Kenai3split$lines[[74]])   # vertices after adding
 #' @export
 addverts <- function(rivers,mindist=500) {
 
@@ -595,5 +590,13 @@ addverts <- function(rivers,mindist=500) {
       }
     }
   }
+  
+  if(!is.null(rivers1$segroutes)) {
+    rivers1 <- buildsegroutes(rivers1,lookup=F)
+  }
+  rivers1 <- addcumuldist(rivers1)
+  if(!is.null(rivers1$distlookup)) rivers1 <- buildlookup(rivers1)
+  
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers1)
 }

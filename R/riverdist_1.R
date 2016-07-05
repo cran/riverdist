@@ -15,6 +15,89 @@ pdist <- function(p1,p2) {
   return(dist)
 }
 
+#' Total Pythagorean Distance
+#' @description Total Pythagorean distance of a sequence of points.  Called internally.
+#' @param xy A matrix of X-Y coordinates of the sequence of points.
+#' @return Distance (numeric)
+#' @author Matt Tyers
+#' @examples
+#' points <- matrix(c(1:10), nrow=5, ncol=2, byrow=FALSE)
+#' 
+#' pdisttot(xy=points)
+#' @export
+pdisttot <- function(xy) {
+  n <- dim(xy)[1]
+  if(n==1) dist <- 0
+  if(n==2) dist <- pdist(xy[1,],xy[2,])
+  if(n>2) dist <- sqrt(((xy[1:(n-1),1] - xy[2:n,1])^2) + ((xy[1:(n-1),2] - xy[2:n,2])^2))
+  return(sum(dist))
+}
+
+
+#' Add Cumulative Distance to a River Network
+#' @description Adds a vector of cumulative distances to a river network.  Called internally.
+#' @param rivers The river network object to use.
+#' @return Returns an object of class \code{"rivernetwork"} containing all
+#'   spatial and topological information.  See \link{rivernetwork-class}.
+#' @author Matt Tyers
+#' @examples
+#' Gulk1 <- addcumuldist(rivers=Gulk)
+#' @export
+addcumuldist <- function(rivers) {
+  cumuldist <- list()
+  for(i in 1:length(rivers$lines)) {
+    xy <- rivers$lines[[i]]
+    n <- dim(xy)[1]
+    cumuldist[[i]] <- c(0,cumsum(sqrt(((xy[1:(n-1),1] - xy[2:n,1])^2) + ((xy[1:(n-1),2] - xy[2:n,2])^2))))
+  }
+  rivers$cumuldist <- cumuldist
+  return(rivers)
+}
+
+
+#' Calculate the Connectivity Matrix for a River Network
+#' @description Calculates the connectivity matrix for a river network, during import and editing.  Called internally.
+#' @param lines A list of coordinate matrices, each corresponding to a line segment.
+#' @param tolerance The spatial tolerance for establishing connectivity.
+#' @return A matrix with topological information.  See the \code{$connections} element of the \link{rivernetwork-class}.
+#' @author Matt Tyers
+#' @examples
+#' Gulk_connections <- calculateconnections(lines=Gulk$lines, tolerance=Gulk$tolerance)
+#' @export
+calculateconnections <- function(lines,tolerance) {
+  length <- length(lines)
+  # defining a connectivity matrix...
+  # connection type 1: beginning - beginning
+  # connection type 2: beginning - end
+  # connection type 3: end - beginning
+  # connection type 4: end - end
+  # connection type 5: beginning - beginning and end - end
+  # connection type 6: beginning - end and end - beginning
+  connections <- matrix(NA,nrow=length,ncol=length)
+  begmat <- matrix(unlist(sapply(lines,function(xy) xy[1,],simplify=F)),ncol=2,byrow=T)
+  endmat <- matrix(unlist(sapply(lines,function(xy) xy[nrow(xy),],simplify=F)),ncol=2,byrow=T)
+  pdist2 <- function(p1,p2mat) {
+    dist <- sqrt((p1[1]-p2mat[,1])^2 + (p1[2]-p2mat[,2])^2)
+    return(dist)
+  }  
+  
+  for(i in 1:length) {
+    mat1 <- pdist2(begmat[i,],begmat)
+    mat2 <- pdist2(begmat[i,],endmat)
+    mat3 <- pdist2(endmat[i,],begmat)
+    mat4 <- pdist2(endmat[i,],endmat)
+    connections[i,mat1<tolerance] <- 1
+    connections[i,mat2<tolerance] <- 2
+    connections[i,mat3<tolerance] <- 3
+    connections[i,mat4<tolerance] <- 4
+    connections[i,(mat1<tolerance & mat4<tolerance)] <- 5
+    connections[i,(mat2<tolerance & mat3<tolerance)] <- 6
+  }
+  diag(connections) <- NA
+  return(connections)
+}
+
+
 #' Create a River Network Object from a Shapefile
 #' @description Uses \link[rgdal]{readOGR} in package 'rgdal' to read a river 
 #'   shapefile, and establishes connectivity of segment endpoints based on 
@@ -27,6 +110,7 @@ pdist <- function(p1,p2) {
 #' @param reproject A valid Proj.4 projection string, if the shapefile is to be 
 #'   re-projected.  Re-projection is done using \link[sp]{spTransform} in 
 #'   package 'sp'.
+#' @param supplyprojection A valid Proj.4 projection string, if the input shapefile does not have the projection information attached.
 #' @return Returns an object of class \code{"rivernetwork"} containing all
 #'   spatial and topological information.  See \link{rivernetwork-class}.
 #' @note Since distance can only be calculated using projected coordinates, 
@@ -54,23 +138,28 @@ pdist <- function(p1,p2) {
 #' plot(Gulk_AKalbers)
 #' 
 #' @export
-line2network <- function(path=".",layer,tolerance=100,reproject=NULL) {
+line2network <- function(path=".",layer,tolerance=100,reproject=NULL,supplyprojection=NULL) {
   sp <- suppressWarnings(rgdal::readOGR(dsn=path,layer=layer,verbose=F)) # reading the shapefile as an sp object
-  if(class(sp)!="SpatialLinesDataFrame") stop("Error - specified shapefile is not a linear feature.")
+  if(class(sp)!="SpatialLinesDataFrame") stop("Specified shapefile is not a linear feature.")
+  if(is.na(sp@proj4string@projargs) & !is.null(supplyprojection)) sp@proj4string@projargs <- supplyprojection
+  if(is.na(sp@proj4string@projargs)) stop("Shapefile projection information is missing.  Use supplyprojection= to specify a Proj.4 projection to use.  If the input shapefile is in WGS84 geographic (long-lat) coordinates, this will be +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 (in double-quotes).  If so, it must also be reprojected using reproject=.")
   proj4 <- strsplit(sp@proj4string@projargs,split=" ")
   projected <- sp::is.projected(sp)
-  if(is.null(reproject) & !projected) stop("Error - Distances can only be computed from a projected coordinate system.  Use reproject= to specify a Proj.4 projection to use.")
+  if(is.null(reproject) & !projected) stop("Distances can only be computed from a projected coordinate system.  Use reproject= to specify a Proj.4 projection to use.")
   
   if(!is.null(reproject)) {
     sp <- sp::spTransform(sp,sp::CRS(reproject))
+    proj4 <- strsplit(sp@proj4string@projargs,split=" ")
   }
   
   units <- "unknown"
   for(i in 1:length(proj4[[1]])) {
-    proj4arg <- strsplit(proj4[[1]][i],split="=")
-    if(proj4arg[[1]][1]=="+units") {
-      units <- proj4arg[[1]][2]
-      cat('\n',"Units:",proj4arg[[1]][2],'\n')
+    if(proj4[[1]][i]!="") {
+      proj4arg <- strsplit(proj4[[1]][i],split="=")
+      if(proj4arg[[1]][1]=="+units") {
+        units <- proj4arg[[1]][2]
+        cat('\n',"Units:",proj4arg[[1]][2],'\n')
+      }
     }
   }
   
@@ -106,40 +195,14 @@ line2network <- function(path=".",layer,tolerance=100,reproject=NULL) {
   rivID <- 1:length
   lineID <- data.frame(rivID,sp_line,sp_seg)
   
-  # defining a connectivity matrix...
-  # connection type 1: beginning - beginning
-  # connection type 2: beginning - end
-  # connection type 3: end - beginning
-  # connection type 4: end - end
-  connections <- matrix(NA,nrow=length,ncol=length)
-  for(i in 1:length) {
-    for(j in 1:length) {
-      i.max <- dim(lines[[i]])[1]
-      j.max <- dim(lines[[j]])[1]
-      if(pdist(lines[[i]][1,],lines[[j]][1,])<tolerance & i!=j) {
-        connections[i,j] <- 1
-      }
-      if(pdist(lines[[i]][1,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 2
-      }
-      if(pdist(lines[[i]][i.max,],lines[[j]][1,])<tolerance & i!=j) {
-        connections[i,j] <- 3
-      }
-      if(pdist(lines[[i]][i.max,],lines[[j]][j.max,])<tolerance & i!=j) {
-        connections[i,j] <- 4
-      }
-    }
-  }
+  connections <- calculateconnections(lines=lines, tolerance=tolerance)
+  
+  if(any(connections %in% 5:6)) braided <- TRUE
   
   # making a vector of total segment lengths
   lengths <- rep(NA,length)
   for(i in 1:length) {
-    sum<-0
-    linelength <- dim(lines[[i]])[1]
-    for(j in 1:(linelength-1)) {
-      sum <- sum+pdist(lines[[i]][j,],lines[[i]][(j+1),])
-    }
-    lengths[i]<-sum
+    lengths[i] <- pdisttot(lines[[i]])
   }
   
   names <- rep(NA,length)
@@ -150,10 +213,26 @@ line2network <- function(path=".",layer,tolerance=100,reproject=NULL) {
   sequenced <- FALSE
   braided <- NA
   
-  out.names <- c("sp","lineID","lines","connections","lengths","names","mouth","sequenced","tolerance","units","braided")
-  out <- list(sp,lineID,lines,connections,lengths,names,mouth,sequenced,tolerance,units,braided)
+  cumuldist <- list()
+  for(i in 1:length) {
+    xy <- lines[[i]]
+    n <- dim(xy)[1]
+    cumuldist[[i]] <- c(0,cumsum(sqrt(((xy[1:(n-1),1] - xy[2:n,1])^2) + ((xy[1:(n-1),2] - xy[2:n,2])^2))))
+  }
+  
+  out.names <- c("sp","lineID","lines","connections","lengths","names","mouth","sequenced","tolerance","units","braided","cumuldist")
+  out <- list(sp,lineID,lines,connections,lengths,names,mouth,sequenced,tolerance,units,braided,cumuldist)
   names(out) <- out.names
   class(out) <- "rivernetwork"
+  
+  length1 <- length(out$lengths)
+  suppressMessages(out <- removeduplicates(out))
+  length2 <- length(out$lengths)
+  if(length2<length1) cat('\n',"Removed",length1-length2,"duplicate segments.",'\n')
+  suppressMessages(out <- removemicrosegs(out))
+  length3 <- length(out$lengths)
+  if(length3<length2) cat('\n',"Removed",length2-length3,"segments with lengths shorter than the connectivity tolerance.",'\n')
+  
   return(out)
 }
 
@@ -309,18 +388,19 @@ plot.rivernetwork <- function(x,segmentnum=TRUE,offset=TRUE,lwd=1,cex=.6,scale=T
 #' @param cex The character expansion factor to use for segment labels
 #' @param lwd The line width to use for highlighted segments
 #' @param add Whether to add the highlighted segments to an existing plot (\code{TRUE}) or call a new plot (\code{FALSE}).  Defaults to \code{FALSE}.
+#' @param color Whether to display segment labels as the same color as the segments.  Defaults to \code{FALSE}.
 #' @param ... Additional plotting arguments (see \link[graphics]{par})
 #' @author Matt Tyers
 #' @examples
 #' data(Kenai3)
 #' plot(Kenai3)
-#' highlightseg(seg=c(3,9,27),rivers=Kenai3)
+#' highlightseg(seg=c(10,30,68),rivers=Kenai3)
 #' @importFrom grDevices rgb
 #' @importFrom graphics plot
 #' @importFrom graphics par
 #' @importFrom graphics text
 #' @export
-highlightseg <- function(seg,rivers,cex=0.8,lwd=3,add=FALSE,...) {
+highlightseg <- function(seg,rivers,cex=0.8,lwd=3,add=FALSE,color=FALSE,...) {
   length<-length(rivers$lines)
   if(!add) plot(rivers,color=FALSE,segmentnum=FALSE,...=...)
   lines<-rivers$lines
@@ -333,7 +413,7 @@ highlightseg <- function(seg,rivers,cex=0.8,lwd=3,add=FALSE,...) {
     if(length(xplot)>0) midptx[j] <- mean(xplot)
     if(length(yplot)>0) midpty[j] <- mean(yplot)
     if(length(xplot)==0 | length(yplot)==0) midptx[j] <- midpty[j] <-NA
-    text(midptx[j],midpty[j],j,cex=cex)
+    text(midptx[j],midpty[j],j,cex=cex,col=ifelse(color,rgb((sin(j)+1)/2.3,(cos(7*j)+1)/2.3,(sin(3*(length-j))+1)/2.3),1))
   }
 }
 
@@ -364,8 +444,8 @@ topologydots <- function(rivers,add=FALSE,...) {
   for(i in 1:dim(connections)[2]) {
     low <- 2
     high <- 2
-    if(length(connections[i,][connections[i,]==1 | connections[i,]==2])>0) low <- 3
-    if(length(connections[i,][connections[i,]==3 | connections[i,]==4])>0) high <- 3
+    if(length(connections[i,][connections[i,]==1 | connections[i,]==2 | connections[i,]==5 | connections[i,]==6])>0) low <- 3
+    if(length(connections[i,][connections[i,]==3 | connections[i,]==4 | connections[i,]==5 | connections[i,]==6])>0) high <- 3
     points(lines[[i]][1,1],lines[[i]][1,2],pch=16,col=low)
     points(lines[[i]][dim(lines[[i]])[1],1],
            lines[[i]][dim(lines[[i]])[1],2],pch=16,col=high)
@@ -523,7 +603,10 @@ trimriver <- function(trim=NULL,trimto=NULL,rivers) {
   }
   trimmed.rivers <- rivers
   trimmed.rivers$lines <- trimmed.rivers$lines[segs]
-  trimmed.rivers$connections <- trimmed.rivers$connections[segs,segs]
+  trimmed.rivers$connections <- as.matrix(trimmed.rivers$connections[segs,segs])
+  if(!is.na(trimmed.rivers$braided)) {
+    if(trimmed.rivers$braided & !any(trimmed.rivers$connections %in% 5:6)) trimmed.rivers$braided <- NA
+  }
   trimmed.rivers$names <- rivers$names[segs]
   trimmed.rivers$lengths <- rivers$lengths[segs]
   if(length(segs)==0) stop("Error - resulting river network has no remaining line segments")
@@ -534,17 +617,20 @@ trimriver <- function(trim=NULL,trimto=NULL,rivers) {
     if(!any(segs==rivers$mouth$mouth.seg)) {
       trimmed.rivers$mouth$mouth.seg <- NA
       trimmed.rivers$mouth$mouth.vert <- NA
+      message("River mouth must be redefined - see help(setmouth)")
     }
   }
   
-  if(!is.null(trimmed.rivers$segroutes)) {
+  if(!is.null(rivers$segroutes) | !is.null(rivers$distlookup)) {
     trimmed.rivers$segroutes <- NULL
-    warning("Segment routes must be rebuilt - see help(buildsegroutes).")
+    trimmed.rivers$distlookup <- NULL
+    warning("Segment routes and/or distance lookup must be rebuilt - see help(buildsegroutes).")
   }
+  trimmed.rivers <- addcumuldist(trimmed.rivers)
   
   # updating sp object
   id <- rivers$lineID
-  sp_lines1 <- rivers$sp@lines[unique(id[segs,2])]   # this is a little kludgy - want to combine Lines in one line when sp_line is the same
+  sp_lines1 <- rivers$sp@lines[unique(id[segs,2])]   
   j<-1
   for(i in unique(id[segs,2])) {
     sp_lines1[[j]]@Lines <- sp_lines1[[j]]@Lines[id[segs,3][id[segs,2]==i]]
@@ -568,6 +654,7 @@ trimriver <- function(trim=NULL,trimto=NULL,rivers) {
   if(dim(rivers$sp@data)[1]==max(rivers$lineID[,2]) & dim(rivers$sp@data)[1]>1) {
     trimmed.rivers$sp@data <- rivers$sp@data[unique(rivers$lineID[segs,2]),]
   }
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(trimmed.rivers)
 }
 
@@ -691,15 +778,13 @@ trimtopoints <- function(x,y,rivers,method="snap",dist=NULL) {
   
   rivers1 <- rivers
   rivers1$lines <- rivers1$lines[keep]
-  rivers1$connections <- rivers1$connections[keep,keep]
+  rivers1$connections <- as.matrix(rivers1$connections[keep,keep])
+  if(!is.na(rivers1$braided)) {
+    if(rivers1$braided & !any(rivers1$connections %in% 5:6)) rivers1$braided <- NA
+  }
   rivers1$names <- rivers$names[keep]
   rivers1$lengths <- rivers$lengths[keep]
   if(keep[1]==0) stop("Error - resulting river network has no remaining line segments")
-  
-  if(!is.null(rivers1$segroutes)) {
-    rivers1$segroutes <- NULL
-    warning("Segment routes must be rebuilt - see help(buildsegroutes).")
-  }
   
   if(!is.na(rivers1$mouth$mouth.seg) & !is.na(rivers1$mouth$mouth.vert)) {
     if(any(keep==rivers$mouth$mouth.seg)) {
@@ -711,9 +796,16 @@ trimtopoints <- function(x,y,rivers,method="snap",dist=NULL) {
     }
   }
   
+  if(!is.null(rivers1$segroutes) | !is.null(rivers1$distlookup)) {
+    rivers1$segroutes <- NULL
+    rivers1$distlookup <- NULL
+    warning("Segment routes and/or distance lookup must be rebuilt - see help(buildsegroutes).")
+  }
+  rivers1 <- addcumuldist(rivers1)
+  
   # updating sp object
   id <- rivers$lineID
-  sp_lines1 <- rivers$sp@lines[unique(id[keep,2])]   # this is a little kludgy - want to combine Lines in one line when sp_line is the same
+  sp_lines1 <- rivers$sp@lines[unique(id[keep,2])]  
   j<-1
   for(i in unique(id[keep,2])) {
     sp_lines1[[j]]@Lines <- sp_lines1[[j]]@Lines[id[keep,3][id[keep,2]==i]]
@@ -737,6 +829,7 @@ trimtopoints <- function(x,y,rivers,method="snap",dist=NULL) {
   if(dim(rivers$sp@data)[1]==max(rivers$lineID[,2]) & dim(rivers$sp@data)[1]>1) {
     rivers1$sp@data <- rivers$sp@data[unique(rivers$lineID[keep,2]),]
   }
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers1)
 }
 
@@ -783,6 +876,7 @@ removeunconnected <- function(rivers) {
   
   if(!is.null(takeout)) takeout <- order[takeout]
   
-  rivers2 <- trimriver(trim=takeout,rivers=rivers)
+  suppressMessages(rivers2 <- trimriver(trim=takeout,rivers=rivers))
+  message("Note: any point data already using the input river network must be re-transformed to river coordinates using xy2segvert() or ptshp2segvert().")
   return(rivers2)
 }

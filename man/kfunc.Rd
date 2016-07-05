@@ -7,7 +7,7 @@
 kfunc(seg, vert, survey = NULL, rivers, lwd = 2, envelope = TRUE,
   envreps = 1000, envcol = "grey80", envborder = NA, maxdist = NULL,
   xlab = "Distance", ylab = "\% within", showN = TRUE,
-  whichplots = NULL, ...)
+  whichplots = NULL, returnoutput = FALSE, ...)
 }
 \arguments{
 \item{seg}{A vector of river locations (segment)}
@@ -51,6 +51,8 @@ only the second, third, and fourth plots of the sequence being produced.
 Accepting the default (\code{NULL}) will result in all plots being 
 produced.}
 
+\item{returnoutput}{Whether to return output instead of producing a plot.  Defaults to \code{FALSE}.}
+
 \item{...}{Additional plotting parameters.}
 }
 \description{
@@ -73,6 +75,8 @@ K-function envelopes for each survey are constructed by bootstrapping
   range (clustering); A K-function below the envelope for a given distance
   range provides evidence of a smaller number of individuals than expected at
   that distance range (dispersal).
+
+This function is distance-computation intensive, and will be extremely slow-running if a river network is used that does not have segment routes and/or distance lookup tables for fast distance computation.  See \link{buildsegroutes} and/or \link{buildlookup} for more information.
 }
 \examples{
 data(Gulk, fakefish)

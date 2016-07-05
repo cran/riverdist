@@ -47,7 +47,9 @@ Calculates the total river network distance between two points
   on the river network, given in river locations (segment and vertex).
 }
 \note{
-Building routes from the river mouth to each river network segment may
+If a distance lookup table (\code{$distlookup}) is present in the river network object, accepting \code{NULL} will bypass route detection and return distance automatically, the fastest algorithm of all.  This is done automatically in \link{buildsegroutes}, but can be called directly using \link{buildlookup}.
+
+Building routes from the river mouth to each river network segment and/or distance lookup tables will
   greatly reduce computation time (see \link{buildsegroutes}).
 }
 \examples{
@@ -56,23 +58,26 @@ riverdistance(startseg=6, endseg=14, startvert=100, endvert=200, rivers=Gulk)
 riverdistance(startvert=100, endvert=200, path=c(6,3,4,10,11,14), rivers=Gulk)
 riverdistance(startseg=6, endseg=14, startvert=100, endvert=200, rivers=Gulk, map=TRUE)
       
-# speed comparison: before and after building routes for each segment...
+# speed comparison: 
+
 data(abstreams)
-plot(x=abstreams)
-abstreams1 <- abstreams
-abstreams1$segroutes <- NULL #taking out the $segroutes component
 
-# before
 tstart <- Sys.time()
-riverdistance(startseg=120, endseg=111, startvert=20, endvert=20, rivers=abstreams1)
-tend <- Sys.time()
-tend - tstart
+riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams, 
+              algorithm="sequential")
+Sys.time()- tstart
 
-# after
 tstart <- Sys.time()
-riverdistance(startseg=120, endseg=111 ,startvert=20, endvert=20, rivers=abstreams)
-tend <- Sys.time()
-tend - tstart
+riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams, 
+              algorithm="Dijkstra")
+Sys.time()- tstart
+
+tstart <- Sys.time()
+riverdistance(startseg=120, startvert=10, endseg=131, endvert=10, rivers=abstreams)
+
+# Note: it is not necessary to specify the algorithm here: the distance function
+# will automatically select the fastest algorithm unless otherwise specified.
+Sys.time()- tstart
 
 }
 \author{

@@ -4,7 +4,8 @@
 \alias{line2network}
 \title{Create a River Network Object from a Shapefile}
 \usage{
-line2network(path = ".", layer, tolerance = 100, reproject = NULL)
+line2network(path = ".", layer, tolerance = 100, reproject = NULL,
+  supplyprojection = NULL)
 }
 \arguments{
 \item{path}{File path, default is the current working directory.}
@@ -18,6 +19,8 @@ working with larger units of distance, such as km.}
 \item{reproject}{A valid Proj.4 projection string, if the shapefile is to be 
 re-projected.  Re-projection is done using \link[sp]{spTransform} in 
 package 'sp'.}
+
+\item{supplyprojection}{A valid Proj.4 projection string, if the input shapefile does not have the projection information attached.}
 }
 \value{
 Returns an object of class \code{"rivernetwork"} containing all

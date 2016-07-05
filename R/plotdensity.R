@@ -34,6 +34,7 @@
 #'   kernel density calculation.  Accepting the default (\code{NULL}) will
 #'   result in the function determining a value to use, based on the total
 #'   length of the river network.
+#' @note This function is distance-computation intensive, and may be slow-running if a river network is used that does not have segment routes and/or distance lookup tables for fast distance computation.  See \link{buildsegroutes} and/or \link{buildlookup} for more information.
 #' @return A river density object, see \link{riverdensity-class}.
 #' @seealso \link{plot.riverdensity}, \link{plotriverdensitypoints}
 #' @author Matt Tyers
@@ -43,12 +44,11 @@
 #' @examples
 #' data(Gulk, fakefish)
 #' 
-#' # # Not run: this step takes a few minutes
-#' # Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
-#' #   survey=fakefish$flight.date)
+#' Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
+#'   survey=fakefish$flight.date)
 #'   
 #' # # 10 plots will be created, recommend calling par(mfrow=c(2,5))
-#' # plot(x=Gulk_dens)
+#' plot(x=Gulk_dens)
 #' @export
 makeriverdensity <- function(seg,vert,rivers,survey=NULL,kernel="gaussian",bw=NULL,resolution=NULL) {
   if(is.null(resolution)) resolution <- sum(rivers$lengths)/500
@@ -60,27 +60,19 @@ makeriverdensity <- function(seg,vert,rivers,survey=NULL,kernel="gaussian",bw=NU
   endptverts <- list()
   for(segi in 1:length(rivers$lines)) {
     segilength <- dim(rivers$lines[[segi]])[1]
-    runsum <- 0
-    endptlengths <- c(seq(from=0,to=rivers$lengths[segi],by=resolution),rivers$lengths[segi])
+    endptlengths <- c(seq(from=0,to=rivers$lengths[segi],by=resolution),(rivers$lengths[segi]))      
     denslengths <- seq(from=(min(resolution,rivers$lengths[segi])/2),to=rivers$lengths[segi],by=resolution)
     if(length(endptlengths)-length(denslengths)==2) {
       denslengths[length(denslengths)+1] <- rivers$lengths[segi]  # this is a hack but shouldn't be too important
     }
-    endptlengthsi <- 1
-    denslengthsi <- 1
     densverts[[segi]] <- endptverts[[segi]] <- NA
-    for(verti in 2:segilength) {
-      runsum <- runsum+pdist(rivers$lines[[segi]][verti,],rivers$lines[[segi]][(verti-1),])
-      if(runsum >= endptlengths[endptlengthsi]) {
-        endptverts[[segi]][endptlengthsi] <- verti
-        endptlengthsi <- endptlengthsi+1
-      }
-      if(denslengthsi <= length(denslengths)) {
-        if(runsum >= denslengths[denslengthsi]) {
-          densverts[[segi]][denslengthsi] <- verti
-          denslengthsi <- denslengthsi+1
-        }
-      }
+    for(endpti in 1:length(endptlengths)) {
+      absdiffs <- abs(rivers$cumuldist[[segi]]-endptlengths[endpti])
+      endptverts[[segi]][endpti] <- which(absdiffs==min(absdiffs,na.rm=T))[1]
+    }
+    for(densi in 1:length(denslengths)) {
+      absdiffs <- abs(rivers$cumuldist[[segi]]-denslengths[densi])
+      densverts[[segi]][densi] <- which(absdiffs==min(absdiffs,na.rm=T))[1]
     }
   }
   
@@ -216,12 +208,11 @@ makeriverdensity <- function(seg,vert,rivers,survey=NULL,kernel="gaussian",bw=NU
 #' @examples
 #' data(Gulk, fakefish)
 #' 
-#' # # Not run: this step takes a few minutes
-#' # Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
-#' #   survey=fakefish$flight.date)
+#' Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
+#'   survey=fakefish$flight.date)
 #'   
 #' # # 10 plots will be created, recommend calling par(mfrow=c(2,5))
-#' # plot(x=Gulk_dens)
+#' plot(x=Gulk_dens)
 #' @export
 plot.riverdensity <- function(x,whichplots=NULL,points=TRUE,bycol=TRUE,bylwd=TRUE,maxlwd=10,pwr=0.7,scalebyN=TRUE,ramp="grey",lwd=1,linecol="black",denscol="black",alpha=1,dark=1,showN=TRUE,main=NULL,xlab="",ylab="",add=FALSE,...) {
   if(class(x)!="riverdensity") stop("Argument x must be an object returned from makeriverdensity().")
@@ -331,9 +322,11 @@ plot.riverdensity <- function(x,whichplots=NULL,points=TRUE,bycol=TRUE,bylwd=TRU
       if(dark<1) denscol <- adjustcolor(denscol,red.f=dark,green.f=dark,blue.f=dark)
       
       for(vertsi in 1:(length(endptverts[[segi]])-1)) {
-        lines(rivers$lines[[segi]][(endptverts[[segi]][vertsi]):(endptverts[[segi]][vertsi+1]),],lwd=lwd,col=linecol,lend=1)
-        if(densities[[isurvey]][[segi]][vertsi] > 0) {
-          lines(rivers$lines[[segi]][(endptverts[[segi]][vertsi]):(endptverts[[segi]][vertsi+1]),],lwd=lwds[vertsi],col=cols[vertsi],lend=1)
+        if(dim(matrix(rivers$lines[[segi]][(endptverts[[segi]][vertsi]):(endptverts[[segi]][vertsi+1]),],ncol=2))[1] > 1) {
+          lines(rivers$lines[[segi]][(endptverts[[segi]][vertsi]):(endptverts[[segi]][vertsi+1]),],lwd=lwd,col=linecol,lend=1)
+          if(densities[[isurvey]][[segi]][vertsi] > 0) {
+            lines(rivers$lines[[segi]][(endptverts[[segi]][vertsi]):(endptverts[[segi]][vertsi+1]),],lwd=lwds[vertsi],col=cols[vertsi],lend=1)
+          }
         }
       }
     }
@@ -341,12 +334,8 @@ plot.riverdensity <- function(x,whichplots=NULL,points=TRUE,bycol=TRUE,bylwd=TRU
     iisurvey <- iisurvey+1
   }
 }
-# 
-# gulk1 <- makeriverdensity(seg=fakefish$seg[fakefish$flight==1],vert=fakefish$vert[fakefish$flight==1],rivers=Gulk)
-# gulk2 <- makeriverdensity(seg=fakefish$seg[fakefish$flight==2],vert=fakefish$vert[fakefish$flight==2],rivers=Gulk)
-# par(mfrow=c(1,1))
-# plot(x=gulk1,ramp="red",alpha=.5)
-# plot(x=gulk2,ramp="green",add=T,alpha=.5)
+ 
+
 
 #' Plot Points Used for Kernel Density
 #' @description Plots the points used to calculate a kernel density object 
@@ -359,10 +348,9 @@ plot.riverdensity <- function(x,whichplots=NULL,points=TRUE,bycol=TRUE,bylwd=TRU
 #' @examples
 #' data(Gulk, fakefish)
 #' 
-#' # # Not run: this step takes a few minutes
-#' # Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk)
+#' Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk)
 #' 
-#' # plotriverdensitypoints(riverdensity=Gulk_dens)
+#' plotriverdensitypoints(riverdensity=Gulk_dens)
 #' @export
 plotriverdensitypoints <- function(riverdensity) {
   lines <- riverdensity$rivers$lines

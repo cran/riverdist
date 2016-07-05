@@ -4,7 +4,7 @@
 \alias{checkbraided}
 \title{Check for Braiding in a River Network}
 \usage{
-checkbraided(rivers, startseg = NULL, endseg = NULL)
+checkbraided(rivers, startseg = NULL, endseg = NULL, progress = TRUE)
 }
 \arguments{
 \item{rivers}{The river network object to check.}
@@ -14,6 +14,8 @@ checkbraided(rivers, startseg = NULL, endseg = NULL)
 
 \item{endseg}{Starting segment of a route to investigate.  If this and
 \code{startseg} are \code{NULL}, the full river network will be checked.}
+
+\item{progress}{Whether to show the progress bar.  Defaults to \code{TRUE}.}
 }
 \description{
 Detects braiding (multiple flow channels between two locations)
@@ -32,7 +34,7 @@ data(KilleyW)
 plot(x=KilleyW)
 checkbraided(rivers=KilleyW)
 
-Kenai3.subset <- trimriver(trimto=c(18,1,64,27,104,93,91,83,45,2), rivers=Kenai3)
+Kenai3.subset <- trimriver(trimto=c(22,2,70,30,15,98,96,89,52,3), rivers=Kenai3)
 plot(x=Kenai3.subset)
 
 checkbraided(startseg=1, endseg=7, rivers=Kenai3.subset)

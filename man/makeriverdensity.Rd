@@ -56,16 +56,17 @@ Uses spatial point data (segment and vertex) to calculate a
 It is likely that calculation will be very slow.  Use of this function 
   with a river network for which segment routes has not yet been calculated 
   is not recommended.
+
+This function is distance-computation intensive, and may be slow-running if a river network is used that does not have segment routes and/or distance lookup tables for fast distance computation.  See \link{buildsegroutes} and/or \link{buildlookup} for more information.
 }
 \examples{
 data(Gulk, fakefish)
 
-# # Not run: this step takes a few minutes
-# Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
-#   survey=fakefish$flight.date)
+Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk, 
+  survey=fakefish$flight.date)
   
 # # 10 plots will be created, recommend calling par(mfrow=c(2,5))
-# plot(x=Gulk_dens)
+plot(x=Gulk_dens)
 }
 \author{
 Matt Tyers

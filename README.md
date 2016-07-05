@@ -1,5 +1,7 @@
 # riverdist 
 
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/riverdist)](https://cran.r-project.org/package=riverdist)
+
 ### River Network Distance Computation and Applications
 
 The 'riverdist' package is intended as a free and readily-available resource for distance calculation along a river network.  This package was written with fisheries research in mind, but could be applied to other fields.  The 'riverdist' package builds upon the functionality of the 'sp' and 'rgdal' packages, which provide the utility of reading GIS shapefiles into the R environment.  What 'riverdist' adds is the ability to treat a linear feature as a connected network, and to calculate travel routes and travel distances along that network.
@@ -33,7 +35,9 @@ Summaries and plots are also available at the dataset level, in addition to indi
 
 ### Installation
 
-The 'riverdist' package is currently available on Github, and can be installed in R with the following code:
+Version 0.12.0 of the 'riverdist' package is available on CRAN.
+
+The development version is currently available on Github, and can be installed in R with the following code:
 
 `install.packages("devtools",dependencies=T)`
 
