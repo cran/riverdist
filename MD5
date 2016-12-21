@@ -1,6 +1,6 @@
-1f7ac7109eb0680d6b1620b9a53776d8 *DESCRIPTION
-da715dcf2506445db6316683e1d20243 *NAMESPACE
-66ab74ca8780ff592ebca0c4ac32a259 *NEWS.md
+31ced2e5599d78853c5526617368edd4 *DESCRIPTION
+7db0498349968317659261a25021a550 *NAMESPACE
+0f7af8b77fb4ab050f30345dbcf6dcc9 *NEWS.md
 c57263c06e732c56f9ad429e150f595f *R/apps_of_direction.R
 abd2d024810b843edd7c4eb0ccd1fb8f *R/apps_of_riverdistance.R
 8e287b00e34cc1e8d8f65a9fe2ff3261 *R/dataset_help.R
@@ -8,14 +8,14 @@ f2b6422da16f6dd2b37963d5714a9e00 *R/detectbraiding.R
 ee33292af9685b8ad7fcf2d3def0cf26 *R/detectroute_riverdistance.R
 c223394f715779b835290667ca54d196 *R/dissolve_zoom.R
 b3ad686b73bec5b92c1d978c2b2a28d1 *R/kfuncs.R
-4b3d720122b43042c405df2e855351ef *R/plotdensity.R
+9e6a4ac0fbaeee01d936188d33d3a393 *R/plotdensity.R
 d41d8cd98f00b204e9800998ecf8427e *R/riverdist.R
-42f354130cfa83093fa721423a5be050 *R/riverdist_1.R
+1012f79fa683d42a914e663880e07490 *R/riverdist_1.R
 c58490e47f9e9890384870db38176217 *R/segs_direction.R
 0beda3216c245aaca8eeb6786a65365b *R/segsplit.R
 713afdbcde55363ba860c94b5aed98ca *R/shortestroute_cleanup.R
 cf5e5c152c02431155d9673ee2e14ec4 *README.md
-12c0222b1a4b539627a92222985c4d63 *build/vignette.rds
+5c8b4d31d5b5c9cac6307b26ec270848 *build/vignette.rds
 00dddd45686ec21386eb9b7d8b1e43fb *data/Gulk.rda
 181220f076f6f5c11f4c4f43c03814a7 *data/Kenai1.rda
 c202b264b4684c5295c46331000b9dba *data/Kenai2.rda
@@ -33,7 +33,7 @@ d74eaa637d6e82f6305958710ef8a1dc *data/line98.rda
 0d62588304fa24dc067a12779a88caf1 *data/smallset.rda
 97b4ecf056e922729a00c500849c69f4 *inst/doc/riverdist_vignette.R
 f97caa5322507e1cce9d0c6f5454ecf3 *inst/doc/riverdist_vignette.Rmd
-ed611aff4de07b0923e9f4533a051cf2 *inst/doc/riverdist_vignette.html
+fac546767c612014b8be83cfe23d6cad *inst/doc/riverdist_vignette.html
 ae3b3df9970b49b6523e608759bc957d *inst/extdata/Gulk_UTM5.CPG
 b172938937454ce777ac526aded8c2fd *inst/extdata/Gulk_UTM5.dbf
 38236f39b817874cd3e2b2b741f6879e *inst/extdata/Gulk_UTM5.prj
@@ -86,7 +86,7 @@ fff87517f4d0149c18b9bd4aaeec94fe *man/mouthdist.Rd
 cff424ec5c17b681d0ae6eb91e54d4f9 *man/pdist.Rd
 dae5e3889af1212681e67e4df0cf197c *man/pdisttot.Rd
 d3eb2ead72b30c8faff32fe8e60b3dfd *man/plot.riverdensity.Rd
-6a0f698d77e1005a41691002962986fb *man/plot.rivernetwork.Rd
+f8e0c8008664c9ec2da5e5e6293383ab *man/plot.rivernetwork.Rd
 06d62702dac10a12d6d13d8b7918258a *man/plotmatbysurveylist.Rd
 26b615e65c1c00e8657fa426d220c6cc *man/plotriverdensitypoints.Rd
 d152188589bee16c63be49c92c272622 *man/plotseq.Rd
@@ -100,7 +100,7 @@ a0468bfc29eec297bb1dc9f1c464ab78 *man/riverdirection.Rd
 37e58f502f564bdbd065d4f5a8d98b84 *man/riverdirectionmatbysurvey.Rd
 ca712cc45943452955d7d1a59a4c74ad *man/riverdirectionseq.Rd
 8ed6008947ec51564c5edaf50509b710 *man/riverdirectiontofrom.Rd
-5565d15ceef62f0ab59c6019d61e8d14 *man/riverdist-package.Rd
+b35061a5f39e1e93c7576ab652d9d4f6 *man/riverdist-package.Rd
 0fcca04db5a180187c7dba397d7e95f2 *man/riverdistance.Rd
 b785138f94af957cc16cf716bfd2ee25 *man/riverdistancelist.Rd
 3db2d90d4002651db540acd0bfd8ddcc *man/riverdistancemat.Rd
@@ -108,7 +108,7 @@ b785138f94af957cc16cf716bfd2ee25 *man/riverdistancelist.Rd
 1102a50ff78f25c25a946699c21d053d *man/riverdistanceseq.Rd
 0e2ee780ac8d72ead7baaa85bb62e6d1 *man/riverdistancetofrom.Rd
 d509c0c68ae48585e010284e6549ef78 *man/rivernetwork.Rd
-ca064349465a450287bb0aeadc6e2343 *man/riverpoints.Rd
+e321057bd7889337e8bd98b9c21746bc *man/riverpoints.Rd
 9ac5d76a7a5a0e120a184230fa98f658 *man/routelist.Rd
 31e340209df82313300f0658d640279a *man/sequenceverts.Rd
 6974649bfe17a7b862bcae44ef2fb68d *man/setmouth.Rd
