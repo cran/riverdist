@@ -1,3 +1,21 @@
+# 'riverdist' 0.13.1.9001 (development version - Mar 30, 2017)
+
+### Added capabilities
+
+* `homerange()` now creates homerange-class objects
+
+* Added `plot.homerange()`, `homerangeoverlap()` and `plothomerangeoverlap()`, which all accept homerange-class objects
+
+* Optimization in `homerange()`: speeded up by a factor of 10ish, depending on the dataset
+
+* Line color in an empty plot with `plot.rivernetwork()` now settable with argument `linecol=`
+
+### Bug fixes
+
+* `mouthdist()` accepts vectors of segment and vertex coordinates
+
+* `segmentnum=` and `empty=` in `plot.rivernetwork()` and others re-implemented
+
 # 'riverdist' 0.13.1 (Feb 3, 2017)
 
 ### Added capabilities
