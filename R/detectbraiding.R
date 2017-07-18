@@ -1,3 +1,56 @@
+# checkbraided <- function(rivers,startseg=NULL,endseg=NULL,progress=TRUE) {
+#   if(class(rivers)!="rivernetwork") stop("Argument 'rivers' must be of class 'rivernetwork'.  See help(line2network) for more information.")
+#   connections <- rivers$connections
+#   length <- length(rivers$lines)
+#   
+#   invertrivers <- rivers
+#   invertrivers$connections <- connections[length:1,length:1]
+#   invertrivers$lines <- rivers$lines[length:1]
+#   
+#   if(sum(is.null(startseg),is.null(endseg))==1) {
+#     stop("Error - need to specify both starting and ending segments, or neither")
+#   }
+#   
+#   if(is.null(startseg) & is.null(endseg)) {
+#     if(interactive() & progress) pb <- txtProgressBar(style=3)
+#     finished <- FALSE
+#     braiding <- FALSE
+#     i <- 1
+#     j <- 1
+#     
+#     while(!finished & !braiding) {
+#       if(i!=j) {
+#         route1 <- detectroute(start=i,end=j,rivers=rivers,algorithm="sequential")
+#         route2 <- detectroute(start=(length-i+1),end=(length-j+1),rivers=invertrivers,algorithm="sequential")
+#         route2 <- length-route2+1
+#         if(length(route1) != length(route2)) braiding<-T
+#         if(length(route1) == length(route2)) if(any(route1 != route2)) braiding<-T
+#       }
+#       if(i==length & j==length) finished<-T
+#       if(i==length) j<-j+1
+#       if(i<length) i<-i+1
+#       if(interactive() & progress) setTxtProgressBar(pb=pb, value=i/length)
+#     }
+#     if(interactive() & progress) setTxtProgressBar(pb=pb, value=1)
+#     if(braiding) cat('\n',"Braiding detected in river network.  Distance measurements may be inaccurate.")
+#     if(finished & !braiding) cat('\n',"No braiding detected in river network.")
+#   }
+#   
+#   if(!is.null(startseg) & !is.null(endseg)) {
+#     if(max(c(startseg,endseg),na.rm=T)>length(rivers$lines) | min(c(startseg,endseg),na.rm=T)<1) {
+#       stop("Invalid segments specified.")
+#     }
+#     route1 <- detectroute(start=startseg,end=endseg,rivers=rivers,algorithm="sequential")
+#     route2 <- detectroute(start=(length-startseg+1),end=(length-endseg+1),rivers=invertrivers,algorithm="sequential")
+#     route2 <- length-route2+1
+#     if(length(route1) != length(route2)) cat("Braiding detected between segments.  Distance measurements may be inaccurate.")
+#     if(length(route1) == length(route2)) if(any(route1 != route2)) cat("Braiding detected between segments.  Distance measurements may be inaccurate.")
+#     if(length(route1) == length(route2)) if(all(route1 == route2)) cat("No braiding detected between segments.")
+#   }
+# }
+
+
+
 #' Check for Braiding in a River Network
 #' @description Detects braiding (multiple flow channels between two locations)
 #'   within a river network object.  Braiding can either be checked for in the
@@ -27,53 +80,36 @@
 #' @export
 checkbraided <- function(rivers,startseg=NULL,endseg=NULL,progress=TRUE) {
   if(class(rivers)!="rivernetwork") stop("Argument 'rivers' must be of class 'rivernetwork'.  See help(line2network) for more information.")
-  connections <- rivers$connections
-  length <- length(rivers$lines)
   
-  invertrivers <- rivers
-  invertrivers$connections <- connections[length:1,length:1]
-  invertrivers$lines <- rivers$lines[length:1]
-  
-  if(sum(is.null(startseg),is.null(endseg))==1) {
-    stop("Error - need to specify both starting and ending segments, or neither")
-  }
-  
-  if(is.null(startseg) & is.null(endseg)) {
-    if(interactive() & progress) pb <- txtProgressBar(style=3)
-    finished <- FALSE
-    braiding <- FALSE
-    i <- 1
-    j <- 1
-    
-    while(!finished & !braiding) {
-      if(i!=j) {
-        route1 <- detectroute(start=i,end=j,rivers=rivers,algorithm="sequential")
-        route2 <- detectroute(start=(length-i+1),end=(length-j+1),rivers=invertrivers,algorithm="sequential")
-        route2 <- length-route2+1
-        if(length(route1) != length(route2)) braiding<-T
-        if(length(route1) == length(route2)) if(any(route1 != route2)) braiding<-T
-      }
-      if(i==length & j==length) finished<-T
-      if(i==length) j<-j+1
-      if(i<length) i<-i+1
-      if(interactive() & progress) setTxtProgressBar(pb=pb, value=i/length)
-    }
-    if(interactive() & progress) setTxtProgressBar(pb=pb, value=1)
+  if(is.null(startseg) | is.null(endseg)) {
+    braiding <- checkbraidedTF(rivers=rivers,progress=progress,toreturn="logical")
     if(braiding) cat('\n',"Braiding detected in river network.  Distance measurements may be inaccurate.")
-    if(finished & !braiding) cat('\n',"No braiding detected in river network.")
+    if(!braiding) cat('\n',"No braiding detected in river network.")
+  }
+  else {
+    braiding <- F
+    theroute <- detectroute(start=startseg, end=endseg, rivers=rivers, stopiferror=F, algorithm="Dijkstra")           ##################################################################
+    if(length(theroute)>2) {
+      jdone <- F
+      j <- 2
+      while(!jdone) {
+        rivers_except_not <- rivers
+        rivers_except_not$connections[theroute[j],] <- NA
+        rivers_except_not$connections[,theroute[j]] <- NA
+        trialroute <- detectroute(start=startseg, end=endseg, rivers=rivers_except_not, stopiferror=F, algorithm="Dijkstra")           ##################################################################
+        if(!is.na(trialroute[1])) {
+          braiding <- T
+          finished <- T  ###############
+          jdone <- T
+        }
+        j <- j+1
+        if(j>=length(theroute)) jdone<-T
+      }
+    }
+    if(braiding) cat("Braiding detected between segments.  Distance measurements may be inaccurate.")
+    else cat("No braiding detected between segments.")
   }
   
-  if(!is.null(startseg) & !is.null(endseg)) {
-    if(max(c(startseg,endseg),na.rm=T)>length(rivers$lines) | min(c(startseg,endseg),na.rm=T)<1) {
-      stop("Invalid segments specified.")
-    }
-    route1 <- detectroute(start=startseg,end=endseg,rivers=rivers,algorithm="sequential")
-    route2 <- detectroute(start=(length-startseg+1),end=(length-endseg+1),rivers=invertrivers,algorithm="sequential")
-    route2 <- length-route2+1
-    if(length(route1) != length(route2)) cat("Braiding detected between segments.  Distance measurements may be inaccurate.")
-    if(length(route1) == length(route2)) if(any(route1 != route2)) cat("Braiding detected between segments.  Distance measurements may be inaccurate.")
-    if(length(route1) == length(route2)) if(all(route1 == route2)) cat("No braiding detected between segments.")
-  }
 }
 
 
@@ -100,54 +136,61 @@ checkbraided <- function(rivers,startseg=NULL,endseg=NULL,progress=TRUE) {
 #' str(KilleyW.1)
 #' @export
 checkbraidedTF <- function(rivers,toreturn="rivers",progress=TRUE) {
-  if(toreturn != "rivers" & toreturn != "logical" & toreturn != "routes") stop("Invalid specification of argument 'toreturn'.  See help for more details.")
+  # if(toreturn != "rivers" & toreturn != "logical" & toreturn != "routes") stop("Invalid specification of argument 'toreturn'.  See help for more details.")
+  if(!(toreturn %in% c("rivers","logical","routes","allroutes"))) stop("Invalid specification of argument 'toreturn'.  See help for more details.")   #################
+  if(toreturn=="allroutes") {
+    allroutes <- list()
+    allroutesi <- 1
+  }
+  
   if(class(rivers)!="rivernetwork") stop("Argument 'rivers' must be of class 'rivernetwork'.  See help(line2network) for more information.")
   connections <- rivers$connections
   length <- length(rivers$lines)
-  mouthseg <- rivers$mouth$mouth.seg
-  if(is.na(mouthseg)) stop("Mouth must be specified.")
+  mouthseg <- ifelse(!is.na(rivers$mouth$mouth.seg),rivers$mouth$mouth.seg,1)
+  # if(is.na(mouthseg)) stop("Mouth must be specified.")
   lines <- rivers$lines
   tolerance <- rivers$tolerance
   if(length==1) {
     braiding <- F
   } else{
     
-  n.top <- function(seg,connections) {
-    return(length(connections[seg,][(connections[seg,]==1 | connections[seg,]==2 | connections[seg,]==5 | connections[seg,]==6) & is.na(connections[seg,])==F]))
-  }
-  n.bot <- function(seg,connections) {
-    return(length(connections[seg,][(connections[seg,]==3 | connections[seg,]==4 | connections[seg,]==5 | connections[seg,]==6) & is.na(connections[seg,])==F]))
-  }
+  ntop <- rowSums(connections==1,na.rm=T) + rowSums(connections==2,na.rm=T) + rowSums(connections==5,na.rm=T) + rowSums(connections==6,na.rm=T)
+  nbot <- rowSums(connections==3,na.rm=T) + rowSums(connections==4,na.rm=T) + rowSums(connections==5,na.rm=T) + rowSums(connections==6,na.rm=T)
   
-  invertrivers <- rivers
-  invertrivers$connections <- connections[length:1,length:1]
-  invertrivers$lines <- rivers$lines[length:1]
+  checkthese <- (1:length)[xor(ntop==0,nbot==0)]
   
-  ntop <- nbot <- NA
-  for(i in 1:length) {
-    ntop[i] <- n.top(i,connections = connections)
-    nbot[i] <- n.bot(i,connections = connections)
-  }
-  checkthese <- (1:length)[(ntop==0&nbot!=0) | (ntop!=0&nbot==0)]
   braiding <- F 
   finished <- F
   i<-1
   if(interactive() & progress) pb <- txtProgressBar(style=3)
   while(!finished) {
-    route1 <- detectroute(start=checkthese[i],end=mouthseg,rivers=rivers,algorithm="sequential")
-    route2 <- detectroute(start=(length-checkthese[i]+1),end=(length-mouthseg+1),rivers=invertrivers,algorithm="sequential")
-    route2 <- length-route2+1
-    if(length(route1) != length(route2)) {
-      braiding<-T
-      finished<-T
+    theroute <- detectroute(start=checkthese[i], end=mouthseg, rivers=rivers, stopiferror=F, algorithm="Dijkstra")           ##################################################################
+    if(length(theroute)>2) {
+      jdone <- F
+      j <- 2
+      while(!jdone) {
+        rivers_except_not <- rivers
+        rivers_except_not$connections[theroute[j],] <- NA
+        rivers_except_not$connections[,theroute[j]] <- NA
+        trialroute <- detectroute(start=checkthese[i], end=mouthseg, rivers=rivers_except_not, stopiferror=F, algorithm="Dijkstra")           ##################################################################
+        if(!is.na(trialroute[1])) {
+          braiding <- T
+          if(toreturn!="allroutes") finished <- T  ###############
+          else {
+            allroutes[[allroutesi]] <- c(setdiff(theroute,trialroute),setdiff(trialroute,theroute))
+            allroutesi <- allroutesi+1
+          }  #################
+          jdone <- T
+          route1 <- theroute
+          route2 <- trialroute
+        }
+        j <- j+1
+        if(j>=length(theroute)) jdone<-T
+      }
     }
-    if(length(route1) == length(route2)) if(any(route1 != route2)) {
-      braiding<-T
-      finished<-T
-    }
-    if(i==length(checkthese)) finished <- T
-    i<-i+1
-    #print(i)
+    if(i>=length(checkthese)) finished<-T
+    i <- i+1
+    
     if(interactive() & progress) setTxtProgressBar(pb=pb, value=i/(length(checkthese)))
   }
   }
@@ -159,26 +202,20 @@ checkbraidedTF <- function(rivers,toreturn="rivers",progress=TRUE) {
   if(toreturn=="routes") {
     if(braiding) return(list(route1=route1, route2=route2))
   }
+  if(toreturn=="allroutes") {   ##################
+    if(braiding) return(allroutes)
+  }  ############
 }
 
 #' Detect Multiple Routes
-#' @description Called internally within \link{riverdistancelist}.  Detects many
-#'   sequential routes from one river network segment to another, in the event
-#'   of braiding.  Different routes are detected by randomly reordering the
-#'   segment numbers of the input river network object, thus changing the
-#'   internal hierarchy of segment selection.
+#' @description Called internally within \link{riverdistancelist}.  Detects all possible routes from one river network segment to another, in the event
+#'   of braiding.  
 #' @param startseg Segment number of the start of the route
 #' @param endseg Segment number of the end of the route
 #' @param rivers The river network object to use
-#' @param reps Number of randomized reorderings to try.  Larger numbers will 
-#'   result in a more comprehensive list of routes, but computation can be slow,
-#'   particularly in the presence of a complex river network.
+#' @param reps Deprecated.  Was used in a previous version using randomization.
 #' @return A list of vectors, each describing a route in segment numbers.
-#' @note Since this function uses randomization, there is no guarantee that the 
-#'   list of routes will be comprehensive.  Larger numbers of \code{reps} can be
-#'   tried, but computation can be slow, particularly in the presence of a
-#'   complex river network.  It may be advantageous to use \link{trimriver} to
-#'   create a smaller, more specific river network object to work with.
+#' @note The previous version of this function returned many possible routes using randomization - this algorithm now computes all possible routes.
 #' @author Matt Tyers
 #' @examples
 #' data(KilleyW)
@@ -187,23 +224,40 @@ checkbraidedTF <- function(rivers,toreturn="rivers",progress=TRUE) {
 #' routelist(startseg=1, endseg=16, rivers=KilleyW, reps=1000)
 #' @export
 routelist <- function(startseg,endseg,rivers,reps=100) {
-  if(class(rivers)!="rivernetwork") stop("Argument 'rivers' must be of class 'rivernetwork'.  See help(line2network) for more information.")
-  if(max(c(startseg,endseg),na.rm=T)>length(rivers$lines) | min(c(startseg,endseg),na.rm=T)<1) stop("Invalid segments specified.")
-  connections <- rivers$connections
-  length <- length(rivers$lines)
   routes <- list()
-  
-  for(i in 1:reps) {
-    codex <- sample(1:length,length)
-    scrambled <- rivers
-    scrambled$segroutes <- NULL
-    scrambled$connections <- rivers$connections[codex,codex]
-    scrambled$lines <- rivers$lines[codex]
-    scrambled.route <- detectroute(start=order(codex)[startseg],end=order(codex)[endseg],rivers=scrambled,algorithm="sequential")
-    routes[[i]] <- codex[scrambled.route]
+  routes[[1]] <- detectroute(start=startseg,end=endseg,rivers=rivers,algorithm="Dijkstra",stopiferror=F)
+  routetoinvestigate <- 1
+  routetoadd <- 2
+  done <- F
+  brokenlist <- list()
+  brokenlist[[1]] <- NA
+  while(!done) {
+    for(i in 1:length(routes[[routetoinvestigate]])) {
+      notrivers <- rivers
+      notrivers$connections[routes[[routetoinvestigate]][i],] <- NA
+      notrivers$connections[,routes[[routetoinvestigate]][i]] <- NA
+      if(!is.na(brokenlist[[routetoinvestigate]][1])) {
+        notrivers$connections[brokenlist[[routetoinvestigate]],] <- NA
+        notrivers$connections[,brokenlist[[routetoinvestigate]]] <- NA
+      }
+      theroute <- detectroute(start=startseg,end=endseg,rivers=notrivers,algorithm="Dijkstra",stopiferror=F)
+      if(!is.na(theroute[1])) {
+        anyofthem <- F
+        for(j in 1:length(routes)) {
+          if(isTRUE(all.equal(routes[[j]],theroute))) anyofthem<-T
+        }
+        if(!anyofthem) {
+          routes[[routetoadd]] <- theroute
+          if(is.na(brokenlist[[routetoinvestigate]][1])) brokenlist[[routetoadd]] <- routes[[routetoinvestigate]][i]
+          else brokenlist[[routetoadd]] <- c(brokenlist[[routetoinvestigate]],routes[[routetoinvestigate]][i])
+          routetoadd <- routetoadd+1
+        }
+      }
+    }
+    routetoinvestigate <- routetoinvestigate+1
+    done <- routetoinvestigate>=length(routes)
   }
-  unique.routes <- unique(routes)
-  return(unique.routes)
+  return(routes)
 }
 
 
@@ -219,9 +273,7 @@ routelist <- function(startseg,endseg,rivers,reps=100) {
 #' @param startvert Vertex number of the start of the route
 #' @param endvert Vertex number of the end of the route
 #' @param rivers The river network object to use
-#' @param reps Number of randomized reorderings to try.  Larger numbers will
-#'   result in a more comprehensive list of routes, but computation can be slow,
-#'   particularly in the presence of a complex river network.
+#' @param reps Deprecated.  Was the number of randomized reorderings to try.
 #' @return A list with two objects, \code{$routes} being a list of detected routes in
 #'   ascending order by distance, and \code{$distances} being the respective distances
 #'   along the routes detected.

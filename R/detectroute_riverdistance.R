@@ -80,17 +80,16 @@ detectroute <- function(start,end,rivers,verbose=FALSE,stopiferror=TRUE,algorith
   }
   
   if(algorithm=="Dijkstra") {
-    tolerance <- rivers$tolerance
-    lines <- rivers$lines
     connections <- rivers$connections
-    length <- length(lines)
+    length <- length(rivers$lines)
     lengths <- rivers$lengths
-    max <- 2*sum(lengths)
+    max1 <- 2*sum(lengths)
     
     segs <- 1:length
-    dists <- rep(max,length)
+    dists <- rep(max1,length)
     visited <- rep(FALSE,length)
     minroutes <- list()
+    minroutes_vec <- rep(NA,length)  
     
     connected <- !is.na(connections)
     dists[start] <- lengths[start]
@@ -99,25 +98,41 @@ detectroute <- function(start,end,rivers,verbose=FALSE,stopiferror=TRUE,algorith
     
     found <- FALSE
     while(!found) {
-      neighbors <- (1:length)[connected[current,]&!visited]
-      for(neighbor in neighbors) {
-        route.tentative <- c(minroutes[[current]],neighbor)
-        dist.tentative <- sum(lengths[route.tentative])
-        if(dist.tentative <= dists[neighbor]) {  
-          dists[neighbor] <- dist.tentative
-          minroutes[[neighbor]] <- route.tentative
-        }
+      neighbors <- (1:length)[connected[current,]&!visited] 
+      if(length(neighbors)>0) {
+        dists.tentative <- sum(lengths[minroutes[[current]]]) + lengths[neighbors]  
+        check1 <- dists.tentative <= dists[neighbors]  
+        if(any(check1)) {
+          neighborscheck1 <- neighbors[check1]
+          dists[neighborscheck1] <- dists.tentative[check1] 
+          for(neighbor in neighborscheck1) {
+            minroutes[[neighbor]] <- c(minroutes[[current]],neighbor)
+          } 
+          minroutes_vec[neighborscheck1] <- neighborscheck1 
+        } 
       }
+      
       if(is.null(minroutes[[current]][1])) {  
         if(stopiferror) stop("No route detected.")
         found <- TRUE
         minroutes[[end]] <- NA
       }
+      
       if(verbose) print(minroutes[[current]])
       visited[current] <- TRUE
       if(current==end) found <- TRUE
-      if(!found) current <- which(dists==min(dists[!visited]))[1]                
-      if(!any(connected[current,unique(unlist(minroutes))])) {  
+      
+      if(!found) {
+        thing1 <- which.min(dists+(visited*max1))
+        if(current == thing1) { 
+          dists[current] <- max1
+          connected[,current] <- connected[current,] <- F
+          current <- minroutes[[current]][length(minroutes[[current]])-1]  
+        }
+        else current <- thing1 
+      }
+      
+      if(!any(connected[current,minroutes_vec[!is.na(minroutes_vec)]]) & !(current %in% minroutes_vec)) {  
         if(stopiferror) stop("No route detected.")
         found <- TRUE
         minroutes[[end]] <- NA
@@ -128,6 +143,7 @@ detectroute <- function(start,end,rivers,verbose=FALSE,stopiferror=TRUE,algorith
         minroutes[[end]] <- NA
       }
     }
+    
     return(minroutes[[end]])
   }
 
@@ -315,7 +331,7 @@ buildsegroutes <- function(rivers,lookup=NULL,verbose=FALSE) {
     if((n.top(i,rivers1$connections)==0 & n.bot(i,rivers1$connections)!=0) | 
        (n.top(i,rivers1$connections)!=0 & n.bot(i,rivers1$connections)==0)) {
       if(verbose) print(i)
-      routes1a <- detectroute(start=i,end=order(order)[rivers$mouth$mouth.seg],rivers=rivers1,algorithm="sequential")
+      routes1a <- detectroute(start=i,end=order(order)[rivers$mouth$mouth.seg],rivers=rivers1,algorithm="Dijkstra")  ###############
       routes1 <- routes1a[length(routes1a):1]
       for(j in 1:length(routes1)) {
         routes[[routes1[j]]] <- routes1[1:j]
@@ -326,7 +342,7 @@ buildsegroutes <- function(rivers,lookup=NULL,verbose=FALSE) {
   for(i in 1:length(rivers$lines)) {
     if(is.na(routes[[i]][1])) {
       if(verbose) print(i)
-      routes_ia <- detectroute(start=i,end=order(order)[rivers$mouth$mouth.seg],rivers=rivers1,algorithm="sequential")
+      routes_ia <- detectroute(start=i,end=order(order)[rivers$mouth$mouth.seg],rivers=rivers1,algorithm="Dijkstra")  ###############
       routes[[i]] <- routes_ia[length(routes_ia):1]
     }
   }
@@ -338,6 +354,7 @@ buildsegroutes <- function(rivers,lookup=NULL,verbose=FALSE) {
   rivers$segroutes <- realroutes
   
   if(is.null(lookup) & length(rivers$lines)<=400) lookup <- T
+  if(is.null(lookup) & length(rivers$lines)>400) lookup <- F
   if(lookup) rivers <- buildlookup(rivers) 
 
   return(rivers) }
@@ -591,7 +608,7 @@ riverdistance <- function(startseg=NULL,endseg=NULL,startvert,endvert,rivers,pat
 #'   of each route (between the starting and ending segments"), and the
 #'   \code{distlookup$starttop} and \code{distlookup$endtop} matrices have value
 #'   \code{TRUE}, \code{FALSE}, or \code{NA} if the segments at the beginning or
-#'   end of the route are connected to the resto of the route at the top of the
+#'   end of the route are connected to the rest of the route at the top of the
 #'   coordinate matrix, bottom of the coordinate matrix, or if the route is
 #'   contained to just one segment, respectively. (See \link{rivernetwork}.)
 #' @note This will add three n by n matrices to the river network object, which
