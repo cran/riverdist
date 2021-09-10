@@ -1,12 +1,12 @@
 Package: riverdist
 Type: Package
 Title: River Network Distance Computation and Applications
-Version: 0.15.3
-Date: 2020-07-01
+Version: 0.15.4
+Date: 2021-09-08
 Author: Matt Tyers [aut, cre]
-Authors@R: person("Matt", "Tyers", email = "matt.tyers@alaska.gov",
+Authors@R: person("Matt", "Tyers", email = "matttyersstat@gmail.com",
     role = c("aut", "cre"))
-Maintainer: Matt Tyers <matt.tyers@alaska.gov>
+Maintainer: Matt Tyers <matttyersstat@gmail.com>
 Description: Reads river network shape files and computes network distances.
     Also included are a variety of computation and graphical tools designed 
     for fisheries telemetry research, such as minimum home range, kernel density 
@@ -20,9 +20,9 @@ Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
 LazyData: TRUE
 URL: https://cran.r-project.org/package=riverdist
-BugReports: http://github.com/mbtyers/riverdist/issues
+BugReports: https://github.com/mbtyers/riverdist/issues
 RoxygenNote: 7.1.0
 NeedsCompilation: no
-Packaged: 2020-07-01 22:30:13 UTC; mbtyers
+Packaged: 2021-09-09 16:45:21 UTC; mbtyers
 Repository: CRAN
-Date/Publication: 2020-07-02 05:00:03 UTC
+Date/Publication: 2021-09-10 08:00:06 UTC
