@@ -1,6 +1,6 @@
-56bbb97f9a612e8fffcfbc8619fac511 *DESCRIPTION
+75fe5d1c4474b65c81a04197c5116732 *DESCRIPTION
 c2d3c4e5a9f35bd1eb46471f2aa0c54c *NAMESPACE
-bb93bfa769876a1cd1466ad859b9c3e7 *NEWS.md
+5f94784ccf6d20fe3ef767c39c68b1b1 *NEWS.md
 233b629ff7b65243577b904529394ebc *R/apps_of_direction.R
 1817829d0dda42e36d309bd1ace3f70b *R/apps_of_riverdistance.R
 e51d21f448409a07e9a3b65b788b94ea *R/cleanup_verts.R
@@ -16,7 +16,7 @@ d41d8cd98f00b204e9800998ecf8427e *R/riverdist.R
 d036f9a4524b237637c99964bd5610ee *R/segsplit.R
 a89b380a8ff98094ec9dd41f33569688 *R/shortestroute_cleanup.R
 c369f7bede442b2a5eb98b68b8bb941b *README.md
-99748c517b62a5a8f5120509c9f8b30f *build/vignette.rds
+100185e6bd46533fa0ffbb06a215b5b0 *build/vignette.rds
 00dddd45686ec21386eb9b7d8b1e43fb *data/Gulk.rda
 181220f076f6f5c11f4c4f43c03814a7 *data/Kenai1.rda
 c202b264b4684c5295c46331000b9dba *data/Kenai2.rda
@@ -31,9 +31,9 @@ b57098ef124c6fa80d5d5d888cfb336b *data/fakefish.rda
 f20a9ecc4b5593495d436d3ccd8896db *data/fakefish_density.rda
 d74eaa637d6e82f6305958710ef8a1dc *data/line98.rda
 0d62588304fa24dc067a12779a88caf1 *data/smallset.rda
-ade166be1bbdf5f123ad081dcc7b7b70 *inst/doc/riverdist_vignette.R
+12347268f208f71d78eaf45845bcdb16 *inst/doc/riverdist_vignette.R
 d5861cef609fcc0fdaae7c8238900d0c *inst/doc/riverdist_vignette.Rmd
-71d278f08ae999188016ded3496a1dcc *inst/doc/riverdist_vignette.html
+ccb3feccbde07c7cca9f237046e22776 *inst/doc/riverdist_vignette.html
 ae3b3df9970b49b6523e608759bc957d *inst/extdata/Gulk_UTM5.CPG
 b172938937454ce777ac526aded8c2fd *inst/extdata/Gulk_UTM5.dbf
 38236f39b817874cd3e2b2b741f6879e *inst/extdata/Gulk_UTM5.prj
@@ -105,7 +105,7 @@ a533e788cdb75a9caf657ee5cacc27f9 *man/riverdirection.Rd
 4579dbeeb5a337b88ac2de72b4755339 *man/riverdirectionmatbysurvey.Rd
 8ce9666295d23f03e45f821019a4aea3 *man/riverdirectionseq.Rd
 5bf4bfac3a5f55bb87fa6a7ff532fe2d *man/riverdirectiontofrom.Rd
-aef909ce92e22d87fb268355b36a9cd4 *man/riverdist-package.Rd
+77442132e5178d6232fd7399ede54236 *man/riverdist-package.Rd
 5da9d0fb29175f52bfb732a1fff65b56 *man/riverdistance.Rd
 6a2344326b4f1f4a3fceab3b2b2c00b2 *man/riverdistancelist.Rd
 f3c0a8f1fd775d1117159903d62e4af5 *man/riverdistancemat.Rd
@@ -133,5 +133,5 @@ d7de4d619c30b237a4d74fc1490f3a11 *man/whoconnected.Rd
 217dd5e372e33839397ce53f2f00c447 *man/xy2segvert.Rd
 476db4dead35913e207d65c5f322c1cb *man/zoomtoseg.Rd
 33c8e750522220763b3f9a6716ff0d60 *tests/testthat.R
-352e28391476ab892e6b546b1a8b0bfd *tests/testthat/test_riverdist.R
+5ed8aff696626d1b16954a2203b90113 *tests/testthat/test_riverdist.R
 d5861cef609fcc0fdaae7c8238900d0c *vignettes/riverdist_vignette.Rmd
