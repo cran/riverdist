@@ -1,8 +1,8 @@
-fea50c11814703222f8b34a518c533ff *DESCRIPTION
+a96a7f26b0bf5fd94d5fe1be2d534c29 *DESCRIPTION
 32cfa98ad75c9d5c32c4090e330e1c5b *NAMESPACE
-bef130ecaddd06ae1a4c1bd358c17d16 *NEWS.md
+3e470de54977c3f5fd5c051cdabaf24e *NEWS.md
 9907897c4a79373cecc070151702d4fa *R/apps_of_direction.R
-f78d7759f20994dafec9c004c79b8042 *R/apps_of_riverdistance.R
+dd723ae8a1cf5f906fc0200fb05407cf *R/apps_of_riverdistance.R
 d834498cefc5dd7fc1ebb0f626ada683 *R/cleanup_verts.R
 8d1f50585d1278400934005e48d843eb *R/dataset_help.R
 24805add091a415dbd6530e97641fba9 *R/detectbraiding.R
@@ -15,7 +15,7 @@ fc14760793f3df5856830f0abdb66d17 *R/riverdist_1.R
 400ee9a7f4c7d59729d77c78023e1d61 *R/segs_direction.R
 a4a032a0134418a7be015556fcf14605 *R/segsplit.R
 29afb2a5dce8aee4959467512eedb9c3 *R/shortestroute_cleanup.R
-a8ebbf88a1d6b548eada1538e404a5ab *README.md
+8140b91d86a93b03b62230d24b095ff8 *README.md
 327138cae11e46baf72ad9a018b5c53e *build/vignette.rds
 72eb0989dafda4a3a1c8ea34f271814e *data/Gulk.rda
 9dd6c1a0e89016d5a7e00a24077574e9 *data/Kenai1.rda
@@ -33,7 +33,7 @@ d74eaa637d6e82f6305958710ef8a1dc *data/line98.rda
 0d62588304fa24dc067a12779a88caf1 *data/smallset.rda
 ade166be1bbdf5f123ad081dcc7b7b70 *inst/doc/riverdist_vignette.R
 6f5e3abaf78fc8b473d74215f0044898 *inst/doc/riverdist_vignette.Rmd
-eba4f8aa3ef9ea18da2dbb35d1eb5198 *inst/doc/riverdist_vignette.html
+5e835522a961ae6104e0ebc3360bbce3 *inst/doc/riverdist_vignette.html
 ae3b3df9970b49b6523e608759bc957d *inst/extdata/Gulk_UTM5.CPG
 b172938937454ce777ac526aded8c2fd *inst/extdata/Gulk_UTM5.dbf
 38236f39b817874cd3e2b2b741f6879e *inst/extdata/Gulk_UTM5.prj
@@ -112,7 +112,7 @@ a533e788cdb75a9caf657ee5cacc27f9 *man/riverdirection.Rd
 4579dbeeb5a337b88ac2de72b4755339 *man/riverdirectionmatbysurvey.Rd
 8ce9666295d23f03e45f821019a4aea3 *man/riverdirectionseq.Rd
 5bf4bfac3a5f55bb87fa6a7ff532fe2d *man/riverdirectiontofrom.Rd
-a9f1d836368ef1599fd2e3785ac4633f *man/riverdist-package.Rd
+e4dbfb759a2de878e465c99d4ac4b5ba *man/riverdist-package.Rd
 5da9d0fb29175f52bfb732a1fff65b56 *man/riverdistance.Rd
 6da12ad971767575e10be26d65fa8efe *man/riverdistancelist.Rd
 f3c0a8f1fd775d1117159903d62e4af5 *man/riverdistancemat.Rd
