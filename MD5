@@ -1,6 +1,6 @@
-a96a7f26b0bf5fd94d5fe1be2d534c29 *DESCRIPTION
+dcf38f5b17b732e91d395e610290d37d *DESCRIPTION
 32cfa98ad75c9d5c32c4090e330e1c5b *NAMESPACE
-3e470de54977c3f5fd5c051cdabaf24e *NEWS.md
+461afa92121eaf885876a852bd21d1f2 *NEWS.md
 9907897c4a79373cecc070151702d4fa *R/apps_of_direction.R
 dd723ae8a1cf5f906fc0200fb05407cf *R/apps_of_riverdistance.R
 d834498cefc5dd7fc1ebb0f626ada683 *R/cleanup_verts.R
@@ -33,7 +33,7 @@ d74eaa637d6e82f6305958710ef8a1dc *data/line98.rda
 0d62588304fa24dc067a12779a88caf1 *data/smallset.rda
 ade166be1bbdf5f123ad081dcc7b7b70 *inst/doc/riverdist_vignette.R
 6f5e3abaf78fc8b473d74215f0044898 *inst/doc/riverdist_vignette.Rmd
-5e835522a961ae6104e0ebc3360bbce3 *inst/doc/riverdist_vignette.html
+b6fe6f70b268b917359653264d05c91f *inst/doc/riverdist_vignette.html
 ae3b3df9970b49b6523e608759bc957d *inst/extdata/Gulk_UTM5.CPG
 b172938937454ce777ac526aded8c2fd *inst/extdata/Gulk_UTM5.dbf
 38236f39b817874cd3e2b2b741f6879e *inst/extdata/Gulk_UTM5.prj
@@ -112,7 +112,7 @@ a533e788cdb75a9caf657ee5cacc27f9 *man/riverdirection.Rd
 4579dbeeb5a337b88ac2de72b4755339 *man/riverdirectionmatbysurvey.Rd
 8ce9666295d23f03e45f821019a4aea3 *man/riverdirectionseq.Rd
 5bf4bfac3a5f55bb87fa6a7ff532fe2d *man/riverdirectiontofrom.Rd
-e4dbfb759a2de878e465c99d4ac4b5ba *man/riverdist-package.Rd
+a3ba3aa73f488558f800e8c202dd6f0e *man/riverdist-package.Rd
 5da9d0fb29175f52bfb732a1fff65b56 *man/riverdistance.Rd
 6da12ad971767575e10be26d65fa8efe *man/riverdistancelist.Rd
 f3c0a8f1fd775d1117159903d62e4af5 *man/riverdistancemat.Rd
@@ -140,5 +140,5 @@ d7de4d619c30b237a4d74fc1490f3a11 *man/whoconnected.Rd
 7a6c9d91e8e77f286500e0a717265d99 *man/xy2segvert.Rd
 476db4dead35913e207d65c5f322c1cb *man/zoomtoseg.Rd
 33c8e750522220763b3f9a6716ff0d60 *tests/testthat.R
-0deedd17f8e253857cd5997518ee9f5d *tests/testthat/test_riverdist.R
+8747a0feefc5deb9101c12040f8496b3 *tests/testthat/test_riverdist.R
 6f5e3abaf78fc8b473d74215f0044898 *vignettes/riverdist_vignette.Rmd
