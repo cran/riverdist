@@ -14,10 +14,10 @@
   maxlwd = 10,
   pwr = 0.7,
   scalebyN = TRUE,
-  ramp = "grey",
+  ramp = c("grey", "gray", "red", "green", "blue", "heat", "stoplight", "rainbow"),
   lwd = 1,
-  linecol = "black",
-  denscol = "black",
+  linecol = NULL,
+  denscol = NULL,
   alpha = 1,
   dark = 1,
   showN = TRUE,
@@ -70,11 +70,11 @@ to \code{TRUE}.  Allowed values are \code{"grey"} (or \code{"gray"}),
 to \code{TRUE}, or all lines if \code{bylwd} is set to \code{FALSE}. 
 Defaults to 1.}
 
-\item{linecol}{The line color to use for background lines if \code{bylwd} is 
-set to \code{TRUE}.  Defaults to \code{"black"}.}
+\item{linecol}{The line color to use for background lines if \code{bycol} is 
+set to \code{FALSE}.  If the default `NULL` is accepted, \code{"black"} lines will be drawn.}
 
-\item{denscol}{The line color to use for showing density if \code{bylwd} is 
-set to \code{TRUE}.  Defaults to \code{"black"}.}
+\item{denscol}{The line color to use for showing density if \code{bycol} is 
+set to \code{FALSE}.  If the default `NULL` is accepted, \code{"black"} lines will be drawn.}
 
 \item{alpha}{The opacity value for lines.  This could potentially allow 
 multiple density plots to be overlayed with different colors.}
@@ -129,7 +129,7 @@ Gulk_dens <- makeriverdensity(seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk,
 plot(x=Gulk_dens)
 }
 \seealso{
-\link{makeriverdensity}, \link{plotriverdensitypoints}
+\link{makeriverdensity}, \link{densityanomaly}, \link{plotriverdensitypoints}
 }
 \author{
 Matt Tyers

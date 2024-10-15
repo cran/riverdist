@@ -146,6 +146,12 @@ par(mfrow=c(3,3))
 plot(x=fakefish_density, ramp="blue", dark=0.85, maxlwd=15,
                  whichplots=c(1:8,10))
 
+## ----fig.width=7.5,fig.height=10,echo=FALSE-----------------------------------
+data(fakefish_density)
+par(mfrow=c(3,3))
+densityanomaly(x=fakefish_density, maxlwd=15,
+                 whichplots=c(1:8,10))
+
 ## ----fig.width=5,fig.height=4-------------------------------------------------
 x <- homerange(unique=fakefish$flight.date, seg=fakefish$seg, vert=fakefish$vert, rivers=Gulk)
 x

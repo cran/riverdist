@@ -1,8 +1,8 @@
 Package: riverdist
 Type: Package
 Title: River Network Distance Computation and Applications
-Version: 0.16.3
-Date: 2024-01-05
+Version: 0.17.0
+Date: 2024-10-14
 Author: Matt Tyers [aut, cre]
 Authors@R: person("Matt", "Tyers", email = "matttyersstat@gmail.com",
     role = c("aut", "cre"))
@@ -21,8 +21,8 @@ VignetteBuilder: knitr
 LazyData: TRUE
 URL: https://cran.r-project.org/package=riverdist
 BugReports: https://github.com/mbtyers/riverdist/issues
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 NeedsCompilation: no
-Packaged: 2024-01-11 23:35:09 UTC; mbtyers
+Packaged: 2024-10-15 18:04:56 UTC; mbtyers
 Repository: CRAN
-Date/Publication: 2024-01-11 23:50:02 UTC
+Date/Publication: 2024-10-15 20:30:01 UTC

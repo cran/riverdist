@@ -394,12 +394,13 @@ test_that("cleanup funcs",{
 filepath <- system.file("extdata", package="riverdist")
 sf <- sf::read_sf(dsn = filepath, layer = "Gulk_UTM5")
 ptshp <- pointshp2segvert(path=filepath, layer="fakefish_UTM5", rivers=Gulk)
+ptshp_xy <- segvert2xy(seg=ptshp$seg, vert=ptshp$vert, rivers=Gulk)
 Gulktest <- line2network(path=filepath, layer="Gulk_UTM5")
 Gulktest_sf <- line2network(path=filepath, layer="Gulk_UTM5")
 test_that("line2network and pointshp2segvert works", {
   expect_equal(length(line2network(path=filepath, layer="Gulk_UTM5")$lines),14)
   expect_equal(length(line2network(sf=sf)$lines), 14)
-  expect_equal(dim(ptshp),c(100,8))
+  expect_equal(dim(ptshp),c(100,10))
   expect_equal(sum(ptshp[,1:2]),27095)
   expect_equal(sum(unlist(Gulktest$lines)), sum(unlist(Gulk$lines)))
   expect_true(isTRUE(all.equal(Gulktest$connections, Gulk$connections)))
@@ -418,6 +419,9 @@ test_that("line2network and pointshp2segvert works", {
   expect_equal(Gulktest$lengths, Gulk$lengths)
   expect_equal(sum(unlist(Gulktest$sf_current$geometry)), sum(unlist(Gulk$lines)))
   expect_equal(sum(unlist(Gulktest_sf$sf_current$geometry)), sum(unlist(Gulk$lines)))
+  expect_true(all(ptshp[c("snap_x","snap_y")] == ptshp_xy[c("snap_x","snap_y")]))
+  expect_equal(dim(ptshp_xy), c(100, 2))
+  expect_equal(sum(ptshp_xy), 783856956)
 }) 
 
 test_that("matbysurvey", {
@@ -435,6 +439,12 @@ test_that("riverdensity", {
   expect_equal(length(fakesubdens$densities),7)
   expect_equal(length(fakesubdens$densities[[1]]),14)
   expect_equal(sum(unlist(fakesubdens$densities)),0.04737915,tolerance=0.000001)
+  expect_silent(plot(fakesubdens))
+  expect_silent(densityanomaly(fakesubdens))
+  expect_silent(densityanomaly(fakesubdens, whichplots = 1:2, parmfrow=1:2))
+  expect_silent(densityanomaly(fakesubdens, whichplots = 1:2, method="both"))
+  expect_silent(densityanomaly(fakesubdens, whichplots = 1:2, method="positive"))
+  expect_silent(densityanomaly(fakesubdens, whichplots = 1:2, method="negative"))
 })
 
 test_that("addverts", {
